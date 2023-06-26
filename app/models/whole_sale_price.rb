@@ -1,0 +1,2 @@
+class WholeSalePrice < ApplicationRecord
+end
