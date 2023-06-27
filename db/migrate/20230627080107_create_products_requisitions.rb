@@ -7,6 +7,7 @@ class CreateProductsRequisitions < ActiveRecord::Migration[7.0]
       t.date :expired_date
       t.decimal :price
       t.string :currency
+      t.text :note
       t.references :requisition, null: false, foreign_key: true
       t.references :product, null: false, foreign_key: true
       t.references :supplier, null: false, foreign_key: true
