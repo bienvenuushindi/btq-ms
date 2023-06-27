@@ -6,9 +6,8 @@ class CreateProductDetails < ActiveRecord::Migration[7.0]
       t.decimal :unit_price
       t.decimal :dozen_price
       t.decimal :box_price
-      t.integer :dozen_units
-      t.integer :box_units
-
+      t.integer :dozen_units, default: 0
+      t.integer :box_units, default: 0
       t.timestamps
     end
   end
