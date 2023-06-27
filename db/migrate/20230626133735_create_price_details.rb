@@ -1,6 +1,6 @@
 class CreatePriceDetails < ActiveRecord::Migration[7.0]
   def change
-    create_table :whole_sale_prices do |t|
+    create_table :price_details do |t|
       t.decimal :dozen, null: false
       t.decimal :box
       t.string :currency
