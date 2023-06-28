@@ -1,0 +1,19 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  size: MyString
+  expired_date: 2023-06-26
+  unit_price: 9.99
+  dozen_price: 9.99
+  box_price: 9.99
+  dozen_units: 1
+  box_units: 1
+
+two:
+  size: MyString
+  expired_date: 2023-06-26
+  unit_price: 9.99
+  dozen_price: 9.99
+  box_price: 9.99
+  dozen_units: 1
+  box_units: 1
