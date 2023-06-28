@@ -9,7 +9,7 @@ module JsonResponseHelper
 
   def fetch_response(data)
     {
-      status: { code: 201 },
+      status: { code: 200 },
       data:
     }
   end
