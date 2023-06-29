@@ -1,6 +1,5 @@
 class Api::V1::RolesController < ApplicationController
   include JsonResponseHelper
-  skip_before_action :authenticate_user!, only: %i[]
   before_action :set_role, only: %i[show]
 
   def index
