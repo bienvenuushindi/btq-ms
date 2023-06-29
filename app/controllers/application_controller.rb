@@ -1,11 +1,7 @@
 class ApplicationController < ActionController::API
-  respond_to :json
-  before_action :configure_permitted_parameters, if: :devise_controller?
   before_action :authenticate_user!
-
-  def authenticate_user!
-    render json: { error: 'Not Authorized' }, status: :unauthorized unless user_signed_in? || request.method == 'POST'
-  end
+  before_action :configure_permitted_parameters, if: :devise_controller?
+  respond_to :json
 
   protected
 
