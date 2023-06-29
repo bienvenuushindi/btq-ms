@@ -15,6 +15,7 @@ module JsonResponseHelper
   end
 
   def created_response(data, message = "Created successfully")
+    message = "#{data.class.name} #{message}" unless message
     {
       status: { code: 201, message: },
       data:

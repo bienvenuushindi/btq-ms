@@ -1,5 +1,4 @@
 class Api::V1::RolesController < ApplicationController
-  include JsonResponseHelper
   before_action :set_role, only: %i[show]
 
   def index

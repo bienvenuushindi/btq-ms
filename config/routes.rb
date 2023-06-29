@@ -16,6 +16,9 @@ Rails.application.routes.draw do
   namespace :api, defaults: { format: :json } do
     namespace :v1 do
       resources :roles, only: [:index, :create, :show]
+      resources :tags, only: [:index, :create, :show]
+      resources :countries, only: [:index, :create, :show]
+      resources :categories, only: [:index, :create, :show]
     end
   end
 end
