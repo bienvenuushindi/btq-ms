@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_06_27_132305) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_30_113718) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -87,6 +87,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_27_132305) do
     t.integer "box_units", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "product_id", null: false
+    t.index ["product_id"], name: "index_product_details_on_product_id"
   end
 
   create_table "product_details_requisitions", force: :cascade do |t|
@@ -115,7 +117,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_27_132305) do
     t.string "country_origin"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["name"], name: "index_products_on_name"
+    t.index ["user_id"], name: "index_products_on_user_id"
   end
 
   create_table "products_tags", id: false, force: :cascade do |t|
@@ -192,9 +196,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_27_132305) do
   add_foreign_key "categories_suppliers", "suppliers"
   add_foreign_key "price_details", "product_details"
   add_foreign_key "price_details", "suppliers"
+  add_foreign_key "product_details", "products"
   add_foreign_key "product_details_requisitions", "products"
   add_foreign_key "product_details_requisitions", "requisitions"
   add_foreign_key "product_details_requisitions", "suppliers"
+  add_foreign_key "products", "users"
   add_foreign_key "products_tags", "products"
   add_foreign_key "products_tags", "tags"
   add_foreign_key "requisitions", "users"
