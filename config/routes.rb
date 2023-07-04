@@ -19,6 +19,15 @@ Rails.application.routes.draw do
       resources :tags, only: [:index, :create, :show]
       resources :countries, only: [:index, :create, :show]
       resources :categories, only: [:index, :create, :show]
+      resources :products, only: [:index, :create, :show]
+      resources :products, only: [] do
+        resources :product_details, only: [:index, :create]
+      end
+      resources :requisitions, only: [:index, :create, :show]
+      resources :suppliers, only: [:index, :create, :show]
+      resources :addresses, only: [:index, :create, :show]
+      resources :price_details, only: [:index, :create, :show]
+      resources :users, only: [:index, :show]
     end
   end
 end
