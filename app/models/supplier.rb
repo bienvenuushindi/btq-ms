@@ -5,4 +5,7 @@ class Supplier < ApplicationRecord
   belongs_to :user
   has_and_belongs_to_many :tags
   has_many :categories
+
+
+  validates :shop_name, presence:  true
 end

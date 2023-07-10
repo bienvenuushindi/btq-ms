@@ -2,17 +2,15 @@
 
 class Users::SessionsController < Devise::SessionsController
   include RackSessionsFix
+  include JsonResponseHelper
   respond_to :json
 
   private
 
   def respond_with(current_user, _opts = {})
-    render json: {
-      status: {
-        code: 200, message: 'Logged in successfully.',
-        data: { user: UserSerializer.new(current_user).serializable_hash[:data][:attributes] }
-      }
-    }, status: :ok
+    data = { user: UserSerializer.new(current_user).serializable_hash[:data][:attributes] }
+    message = 'Logged in successfully.'
+    render json: created_response(data, message), status: :ok
   end
 
   def respond_to_on_destroy
@@ -22,15 +20,9 @@ class Users::SessionsController < Devise::SessionsController
     end
 
     if current_user
-      render json: {
-        status: 200,
-        message: 'Logged out successfully.'
-      }, status: :ok
+      render json: completed_response('Logged out successfully.'), status: :ok
     else
-      render json: {
-        status: 401,
-        message: "Couldn't find an active session."
-      }, status: :unauthorized
+      render json: unauthorized_response("Couldn't find an active session."), status: :unauthorized
     end
   end
 end
