@@ -2,7 +2,8 @@ class Api::V1::CountriesController < ApplicationController
   before_action :set_country, only: %i[show]
 
   def index
-    render json: fetch_response(Country.all), status: :ok
+    data =  CountrySerializer.new(Country.all)
+    render json: data, status: :ok
   end
 
   def create

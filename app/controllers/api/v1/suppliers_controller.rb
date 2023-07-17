@@ -2,7 +2,8 @@ class Api::V1::SuppliersController < ApplicationController
   before_action :set_supplier, only: %i[show]
 
   def index
-    render json: fetch_response(Supplier.all), status: :ok
+    data =  SupplierSerializer.new(Supplier.all)
+    render json: data, status: :ok
   end
 
   def create
