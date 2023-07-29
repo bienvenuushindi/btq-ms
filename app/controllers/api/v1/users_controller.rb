@@ -2,11 +2,13 @@ class Api::V1::UsersController < ApplicationController
   before_action :set_user, only: %i[show]
 
   def index
-    render json: fetch_response(User.all), status: :ok
+    data = UserSerializer.new(User.all)
+    render json: data, status: :ok
   end
 
   def show
-    render json: fetch_response(set_user), status: :ok
+    data = UserSerializer.new(set_user)
+    render json: data, status: :ok
   end
 
   private

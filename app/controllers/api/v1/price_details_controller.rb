@@ -2,7 +2,8 @@ class Api::V1::PriceDetailsController < ApplicationController
   before_action :set_price_detail, only: %i[show]
 
   def index
-    render json: fetch_response(PriceDetail.all), status: :ok
+    data= PriceDetailSerializer.new(PriceDetail.where(product_detail_id: params[:product_detail_id]))
+    render json: data, status: :ok
   end
 
   def create
@@ -25,6 +26,6 @@ class Api::V1::PriceDetailsController < ApplicationController
   end
 
   def price_detail_params
-    params.require(:price_detail).permit(:dozen, :box, :currency, :supplier_id)
+    params.require(:price_detail).permit(:dozen, :box, :currency, :supplier_id, :product_detail_id)
   end
 end

@@ -2,7 +2,8 @@ class Api::V1::ProductDetailsController < ApplicationController
   before_action :set_product, only: %i[create index]
 
   def index
-    render json: fetch_response(ProductDetail.all), status: :ok
+    data = ProductDetailSerializer.new(ProductDetail.where(product: set_product))
+    render json: data, status: :ok
   end
 
   def create
