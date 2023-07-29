@@ -50,5 +50,8 @@ gem 'rack-cors'
 gem 'devise'
 gem 'devise-jwt'
 gem 'jsonapi-serializer'
+gem 'pg_search'
+# gem 'pagy', "~> 6.0.4"
+gem 'jsom-pagination'
 # gem 'active_model_serializers'
 # gem "devise-jwt-cookies",  github: "bienvenuushindi/devise-jwt-cookie"
