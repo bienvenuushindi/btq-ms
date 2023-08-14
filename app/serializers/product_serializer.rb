@@ -1,7 +1,7 @@
-class ProductSerializer
-  include Rails.application.routes.url_helpers
-  include JSONAPI::Serializer
+class ProductSerializer < Serializer
+  has_many :product_details
   attributes :name, :short_description, :description, :active, :country_origin, :created_at, :updated_at, :image_urls
-
-  has_many :product_detail
+  attribute :details do |object|
+    object.product_details.select("id, (size || '- $' || unit_price) as size_price").collect { |t| {id: t.id, name: "#{object.name} #{t.size_price}"} }
+  end
 end
