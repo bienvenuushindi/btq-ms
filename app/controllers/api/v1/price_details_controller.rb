@@ -2,7 +2,7 @@ class Api::V1::PriceDetailsController < ApplicationController
   before_action :set_price_detail, only: %i[show]
 
   def index
-    data= PriceDetailSerializer.new(PriceDetail.where(product_detail_id: params[:product_detail_id]))
+    data = PriceDetailSerializer.new(PriceDetail.where(product_detail_id: params[:product_detail_id]))
     render json: data, status: :ok
   end
 

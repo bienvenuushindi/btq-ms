@@ -2,8 +2,9 @@ class Api::V1::ProductDetailsController < ApplicationController
   before_action :set_product, only: %i[create index]
 
   def index
-    data = ProductDetailSerializer.new(ProductDetail.where(product: set_product))
-    render json: data, status: :ok
+    product_details = set_product.product_details
+    data = product_details.with_attached_images.order(created_at: :desc)
+    render json: serializer.new(data), status: :ok
   end
 
   def create
@@ -14,7 +15,8 @@ class Api::V1::ProductDetailsController < ApplicationController
                                        box_price: product_detail_params[:box_price],
                                        dozen_units: product_detail_params[:dozen_units],
                                        box_units: product_detail_params[:box_units],
-                                       product: set_product
+                                       product: set_product,
+                                       images: product_detail_params[:images]
     )
     if product_detail.save
       render json: created_response(product_detail), status: :created
@@ -29,11 +31,15 @@ class Api::V1::ProductDetailsController < ApplicationController
 
   private
 
+  def serializer
+    ProductDetailSerializer
+  end
+
   def set_product
     Product.find(params[:product_id])
   end
 
   def product_detail_params
-    params.require(:product_detail).permit(:size, :expired_date, :unit_price, :dozen_price, :box_price, :dozen_units, :box_units)
+    params.require(:product_detail).permit(:size, :expired_date, :unit_price, :dozen_price, :box_price, :dozen_units, :box_units, images: [])
   end
 end

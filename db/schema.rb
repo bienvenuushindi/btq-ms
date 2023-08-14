@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_07_19_135451) do
+ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -124,15 +124,15 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_19_135451) do
     t.integer "quantity", default: 0
     t.integer "quantity_type"
     t.date "expired_date"
-    t.decimal "price"
+    t.decimal "price", default: "0.0"
     t.string "currency"
     t.text "note"
     t.bigint "requisition_id", null: false
-    t.bigint "product_id", null: false
-    t.bigint "supplier_id", null: false
+    t.bigint "supplier_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["product_id"], name: "index_product_details_requisitions_on_product_id"
+    t.bigint "product_detail_id", null: false
+    t.index ["product_detail_id"], name: "index_product_details_requisitions_on_product_detail_id"
     t.index ["requisition_id"], name: "index_product_details_requisitions_on_requisition_id"
     t.index ["supplier_id"], name: "index_product_details_requisitions_on_supplier_id"
   end
@@ -166,6 +166,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_19_135451) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "date", default: "2023-08-09"
     t.index ["user_id"], name: "index_requisitions_on_user_id"
   end
 
@@ -227,7 +228,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_19_135451) do
   add_foreign_key "price_details", "product_details"
   add_foreign_key "price_details", "suppliers"
   add_foreign_key "product_details", "products"
-  add_foreign_key "product_details_requisitions", "products"
+  add_foreign_key "product_details_requisitions", "product_details"
   add_foreign_key "product_details_requisitions", "requisitions"
   add_foreign_key "product_details_requisitions", "suppliers"
   add_foreign_key "products", "users"

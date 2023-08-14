@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   # root "articles#index"
   namespace :api, defaults: { format: :json } do
     namespace :v1 do
+      get 'products/search', to: 'products#search'
       resources :roles, only: [:index, :create, :show]
       resources :tags, only: [:index, :create, :show]
       resources :countries, only: [:index, :create, :show]
@@ -29,10 +30,16 @@ Rails.application.routes.draw do
       resources :product_details, only: [] do
         resources :price_details, only: [:index, :create, :show]
       end
-      resources :requisitions, only: [:index, :create, :show]
+      resources :requisitions, only: [:index, :create, :show, :update] do
+        member do
+          delete 'product_details/:product_detail_id/remove_item', to: 'requisitions#remove_item', as: :remove_item
+          post 'add_products', to: 'requisitions#add_products', as: :add_products
+        end
+      end
       resources :suppliers, only: [:index, :create, :show]
       resources :addresses, only: [:index, :create, :show]
       resources :users, only: [:index, :show]
+      get '/current_user', to: 'current_user#index'
     end
   end
 end
