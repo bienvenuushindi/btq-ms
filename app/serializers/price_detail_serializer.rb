@@ -1,5 +1,4 @@
-class PriceDetailSerializer
-  include JSONAPI::Serializer
+class PriceDetailSerializer < Serializer
   attributes :id, :box, :dozen, :currency
 
   belongs_to :product_detail
