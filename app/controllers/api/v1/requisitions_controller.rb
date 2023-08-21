@@ -2,7 +2,9 @@ class Api::V1::RequisitionsController < ApplicationController
   before_action :set_requisition, only: %i[show]
 
   def index
-    render json: fetch_response(Requisition.all), status: :ok
+    options= {}
+    options[:fields] = { requisition: [:total_price, :count_products, :count_products_bought, :price_currency, :archived, :date] }
+    render json: serializer.new(Requisition.all, options), status: :ok
   end
 
   def create
@@ -51,7 +53,7 @@ class Api::V1::RequisitionsController < ApplicationController
   def remove_item
     requisition = Requisition.find(params[:id])
     product_detail = ProductDetail.find(params[:product_detail_id])
-    item = ProductDetailRequisition.where(requisition: requisition, product_detail: product_detail).destroy_all
+     ProductDetailRequisition.where(requisition: requisition, product_detail: product_detail).destroy_all
 
     head :no_content
   end
