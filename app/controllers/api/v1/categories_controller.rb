@@ -2,7 +2,20 @@ class Api::V1::CategoriesController < ApplicationController
   before_action :set_category, only: %i[show destroy]
 
   def index
-    render json: fetch_response(Category.all), status: :ok
+    categories = Category.all
+    categories = categories.search(params[:q]) if params[:q].present?
+    categories = categories.reorder(sort_column => sort_direction)
+    paginated = paginate(categories)
+    
+    categories.present? ? render_collection(paginated) : :not_found
+  end
+
+  def sort_column
+    %w{name active created_at count_products }.include?(params[:sort]) ? params[:sort] : "created_at"
+  end
+
+  def sort_direction
+    %w{asc desc }.include?(params[:direction]) ? params[:direction] : "desc"
   end
 
   def create
@@ -29,7 +42,20 @@ class Api::V1::CategoriesController < ApplicationController
     head :no_content
   end
 
+  def tree_structure
+    # options = {}
+    # options[:is_collection]=true
+    # options[:fields] = { category: [:id, :name, :children]}
+    categories_tree = Category.tree_structure
+
+    render json: {data:categories_tree}, status: :ok
+  end
+
   private
+
+  def serializer
+    CategorySerializer
+  end
 
   def set_category
     @category = Category.find(params[:id])
