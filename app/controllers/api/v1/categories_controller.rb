@@ -43,11 +43,7 @@ class Api::V1::CategoriesController < ApplicationController
   end
 
   def tree_structure
-    # options = {}
-    # options[:is_collection]=true
-    # options[:fields] = { category: [:id, :name, :children]}
     categories_tree = Category.tree_structure
-
     render json: {data:categories_tree}, status: :ok
   end
 
