@@ -2,7 +2,19 @@ class Api::V1::TagsController < ApplicationController
   before_action :set_tag, only: %i[show]
 
   def index
-    render json: fetch_response(Tag.all), status: :ok
+    render json: serializer.new(Tag.all), status: :ok
+  end
+
+  def search
+    tags = nil
+    options = {}
+    if params[:q].present?
+      options[:fields] = { tag: [:name] }
+      tags = Tag.all.search(params[:q])
+      tags = tags.order(created_at: :desc)
+    end
+    paginated = tags.present? ? paginate(tags)  : paginate(ActsAsTaggableOn::Tag.most_used(10))
+    render_collection(paginated, options)
   end
 
   def create
@@ -19,6 +31,10 @@ class Api::V1::TagsController < ApplicationController
   end
 
   private
+
+  def serializer
+    TagSerializer
+  end
 
   def set_tag
     Tag.find(params[:id])
