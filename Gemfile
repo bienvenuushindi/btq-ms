@@ -53,5 +53,6 @@ gem 'jsonapi-serializer'
 gem 'pg_search'
 # gem 'pagy', "~> 6.0.4"
 gem 'jsom-pagination'
+gem 'acts-as-taggable-on', '~> 9.0'
 # gem 'active_model_serializers'
 # gem "devise-jwt-cookies",  github: "bienvenuushindi/devise-jwt-cookie"

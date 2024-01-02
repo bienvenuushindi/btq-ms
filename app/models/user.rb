@@ -9,5 +9,10 @@ class User < ApplicationRecord
   has_many :requisitions
   has_many :addresses, as: :addressable
   has_many :suppliers
+  has_one_attached :image
 
+  def image_url
+    return [ActionController::Base.helpers.image_url('no-img.png')] unless image.attached?
+    Rails.application.routes.url_helpers.rails_blob_path(image, only_path: true)
+  end
 end

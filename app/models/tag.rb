@@ -1,5 +1,5 @@
 class Tag < ApplicationRecord
-  has_and_belongs_to_many :tags
-  has_and_belongs_to_many :tags
-  validates :name, presence: true, uniqueness: true
+  include PgSearch::Model
+  pg_search_scope :search, against: %i[name], using: { tsearch: { prefix: true } }
+  has_many :suppliers
 end

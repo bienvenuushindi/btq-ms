@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
+ActiveRecord::Schema[7.0].define(version: 2023_12_07_120217) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -68,22 +68,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
     t.index ["parent_category_id"], name: "index_categories_on_parent_category_id"
   end
 
-  create_table "categories_products", force: :cascade do |t|
+  create_table "categorizations", force: :cascade do |t|
     t.bigint "category_id", null: false
-    t.bigint "product_id", null: false
+    t.string "categorizable_type", null: false
+    t.bigint "categorizable_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["category_id"], name: "index_categories_products_on_category_id"
-    t.index ["product_id"], name: "index_categories_products_on_product_id"
-  end
-
-  create_table "categories_suppliers", force: :cascade do |t|
-    t.bigint "category_id", null: false
-    t.bigint "supplier_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["category_id"], name: "index_categories_suppliers_on_category_id"
-    t.index ["supplier_id"], name: "index_categories_suppliers_on_supplier_id"
+    t.index ["categorizable_type", "categorizable_id"], name: "index_categorizations_on_categorizable"
+    t.index ["category_id"], name: "index_categorizations_on_category_id"
   end
 
   create_table "countries", force: :cascade do |t|
@@ -94,28 +86,31 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
   end
 
   create_table "price_details", force: :cascade do |t|
-    t.decimal "dozen", null: false
-    t.decimal "box"
+    t.decimal "price", null: false
+    t.integer "quantity_type"
     t.string "currency"
     t.bigint "supplier_id", null: false
     t.bigint "product_detail_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["product_detail_id"], name: "index_price_details_on_product_detail_id"
+    t.index ["supplier_id", "product_detail_id", "quantity_type"], name: "index_unique_price_details", unique: true
     t.index ["supplier_id"], name: "index_price_details_on_supplier_id"
   end
 
   create_table "product_details", force: :cascade do |t|
     t.string "size"
     t.date "expired_date"
-    t.decimal "unit_price"
-    t.decimal "dozen_price"
-    t.decimal "box_price"
+    t.decimal "unit_price", default: "0.0"
+    t.decimal "dozen_price", default: "0.0"
+    t.decimal "box_price", default: "0.0"
     t.integer "dozen_units", default: 0
     t.integer "box_units", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "product_id", null: false
+    t.boolean "status", default: false
+    t.string "currency", default: "usd"
     t.index ["product_id"], name: "index_product_details_on_product_id"
   end
 
@@ -150,13 +145,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
     t.index ["user_id"], name: "index_products_on_user_id"
   end
 
-  create_table "products_tags", id: false, force: :cascade do |t|
-    t.bigint "tag_id", null: false
-    t.bigint "product_id", null: false
-    t.index ["product_id"], name: "index_products_tags_on_product_id"
-    t.index ["tag_id"], name: "index_products_tags_on_tag_id"
-  end
-
   create_table "requisitions", force: :cascade do |t|
     t.decimal "total_price"
     t.integer "count_products", default: 0
@@ -184,20 +172,35 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
     t.index ["user_id"], name: "index_suppliers_on_user_id"
   end
 
-  create_table "suppliers_tags", id: false, force: :cascade do |t|
-    t.bigint "tag_id", null: false
-    t.bigint "supplier_id", null: false
-    t.index ["supplier_id"], name: "index_suppliers_tags_on_supplier_id"
-    t.index ["tag_id"], name: "index_suppliers_tags_on_tag_id"
+  create_table "taggings", force: :cascade do |t|
+    t.bigint "tag_id"
+    t.string "taggable_type"
+    t.bigint "taggable_id"
+    t.string "tagger_type"
+    t.bigint "tagger_id"
+    t.string "context", limit: 128
+    t.datetime "created_at", precision: nil
+    t.string "tenant", limit: 128
+    t.index ["context"], name: "index_taggings_on_context"
+    t.index ["tag_id", "taggable_id", "taggable_type", "context", "tagger_id", "tagger_type"], name: "taggings_idx", unique: true
+    t.index ["tag_id"], name: "index_taggings_on_tag_id"
+    t.index ["taggable_id", "taggable_type", "context"], name: "taggings_taggable_context_idx"
+    t.index ["taggable_id", "taggable_type", "tagger_id", "context"], name: "taggings_idy"
+    t.index ["taggable_id"], name: "index_taggings_on_taggable_id"
+    t.index ["taggable_type", "taggable_id"], name: "index_taggings_on_taggable_type_and_taggable_id"
+    t.index ["taggable_type"], name: "index_taggings_on_taggable_type"
+    t.index ["tagger_id", "tagger_type"], name: "index_taggings_on_tagger_id_and_tagger_type"
+    t.index ["tagger_id"], name: "index_taggings_on_tagger_id"
+    t.index ["tagger_type", "tagger_id"], name: "index_taggings_on_tagger_type_and_tagger_id"
+    t.index ["tenant"], name: "index_taggings_on_tenant"
   end
 
   create_table "tags", force: :cascade do |t|
-    t.string "name", default: "", null: false
-    t.integer "count_suppliers", default: 0
-    t.integer "count_products", default: 0
+    t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["name"], name: "index_tags_on_name"
+    t.integer "taggings_count", default: 0
+    t.index ["name"], name: "index_tags_on_name", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -221,10 +224,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "addresses", "countries"
-  add_foreign_key "categories_products", "categories"
-  add_foreign_key "categories_products", "products"
-  add_foreign_key "categories_suppliers", "categories"
-  add_foreign_key "categories_suppliers", "suppliers"
+  add_foreign_key "categorizations", "categories"
   add_foreign_key "price_details", "product_details"
   add_foreign_key "price_details", "suppliers"
   add_foreign_key "product_details", "products"
@@ -232,11 +232,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_09_094904) do
   add_foreign_key "product_details_requisitions", "requisitions"
   add_foreign_key "product_details_requisitions", "suppliers"
   add_foreign_key "products", "users"
-  add_foreign_key "products_tags", "products"
-  add_foreign_key "products_tags", "tags"
   add_foreign_key "requisitions", "users"
   add_foreign_key "suppliers", "users"
-  add_foreign_key "suppliers_tags", "suppliers"
-  add_foreign_key "suppliers_tags", "tags"
+  add_foreign_key "taggings", "tags"
   add_foreign_key "users", "roles"
 end
