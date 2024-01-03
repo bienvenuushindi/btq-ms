@@ -5,7 +5,17 @@ class Users::RegistrationsController < Devise::RegistrationsController
   include JsonResponseHelper
   respond_to :json
 
+
   private
+
+
+  def sign_up_params
+    params.require(:user).permit(:email, :password, :name, :phone_number, :role_id)
+  end
+
+  def account_update_params
+    params.require(:user).permit(:email, :password, :name, :phone_number, :role_id)
+  end
 
   def respond_with(current_user, _opts = {})
     if resource.persisted?
