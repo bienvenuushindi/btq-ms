@@ -8,15 +8,15 @@ module JsonResponseHelper
   end
 
   def fetch_response(data)
-      # status: { code: 200 },
-      data
+    # status: { code: 200 },
+    data
   end
 
   def created_response(data, message = "Created successfully")
     # message = "#{data.class.name} #{message}" unless message
     # {
-      # status: { code: 201, message: },
-      data
+    # status: { code: 201, message: },
+    data
   end
 
   def unauthorized_response(message = 'Not Authorized')
@@ -25,10 +25,10 @@ module JsonResponseHelper
     }
   end
 
-  def error_response(instance)
-    message = "#{instance.class.name} couldn't be created successfully. #{instance.errors.full_messages.to_sentence}"
+  def error_response(instance, message = nil)
+    message = "#{instance.class.name} couldn't be created successfully. #{instance.errors.full_messages.to_sentence}" if message.nil?
     {
-      status: { code: 422, message: }
+      status: { code: 422, message: message}
     }
   end
 end
