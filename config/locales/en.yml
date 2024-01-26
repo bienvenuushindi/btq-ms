@@ -29,5 +29,26 @@
 # To learn more, please read the Rails Internationalization guide
 # available at https://guides.rubyonrails.org/i18n.html.
 
+# config/locales/en.yml
 en:
-  hello: "Hello world"
+  activerecord:
+    attributes:
+      product:
+        name: "Name"
+        description: "Description"
+        short_description: "Short description"
+        country_origin: "Country of origin"
+    errors:
+      models:
+        product:
+          attributes:
+            name:
+              blank: "can't be blank"
+              taken: "has already been taken"
+            description:
+              blank: "can't be blank"
+            short_description:
+              blank: "can't be blank"
+            country_origin:
+              blank: "can't be blank"
+
