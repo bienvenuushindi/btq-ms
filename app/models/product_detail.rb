@@ -1,5 +1,5 @@
 class ProductDetail < ApplicationRecord
-  belongs_to :product
+  belongs_to :product, class_name: 'Product'
   has_many :price_details
   has_many :suppliers, through: :price_details
   has_many :product_detail_requisitions
@@ -40,11 +40,9 @@ class ProductDetail < ApplicationRecord
   def self.count_expired_soon
     sc_expired_soon.count
   end
+
   def image_urls
-    return   [ActionController::Base.helpers.image_url('no-img.png')] unless images.attached?
-    images.map do |image|
-      Rails.application.routes.url_helpers.rails_blob_path(image, only_path: true)
-    end
+    images.attached? ? images.map { |image| image.blob.url } : [ActionController::Base.helpers.image_url('no-img.png')]
   end
 
   def categories_suppliers

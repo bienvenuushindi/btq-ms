@@ -24,7 +24,6 @@ class User < ApplicationRecord
   validates :password, presence: true, length: { minimum: 6 }, on: :create
 
   def image_url
-    return [ActionController::Base.helpers.image_url('no-img.png')] unless image.attached?
-    Rails.application.routes.url_helpers.rails_blob_path(image, only_path: true)
+    image.attached? ? image.blob.url  : [ActionController::Base.helpers.image_url('no-img.png')]
   end
 end

@@ -13,10 +13,7 @@ class Supplier < ApplicationRecord
   validates :shop_name, presence: true
 
   def image_urls
-    return [ActionController::Base.helpers.image_url('no-img.png')] unless images.attached?
-    images.map do |image|
-      Rails.application.routes.url_helpers.rails_blob_path(image, only_path: true)
-    end
+    images.attached? ? images.map { |image| image.blob.url } : [ActionController::Base.helpers.image_url('no-img.png')]
   end
 
 
