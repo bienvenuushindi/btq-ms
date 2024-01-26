@@ -9,7 +9,11 @@ class Api::V1::ProductsController < ApplicationController
     products = products.with_attached_images.order(created_at: :desc)
     paginated = paginate(products)
 
-    products.present? ? render_collection(paginated) : :not_found
+    if products.present?
+      render_collection(paginated)
+    else
+      render json: { error: 'No products found' }, status: :not_found
+    end
   end
 
   def count_by_status
@@ -23,11 +27,11 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   def sort_column
-    %w{name active created_at country_origin }.include?(params[:sort]) ? params[:sort] : "created_at"
+    %w[name active created_at country_origin].include?(params[:sort]) ? params[:sort] : 'created_at'
   end
 
   def sort_direction
-    %w{asc desc }.include?(params[:direction]) ? params[:direction] : "desc"
+    %w[asc desc].include?(params[:direction]) ? params[:direction] : 'desc'
   end
 
   def search
@@ -35,50 +39,45 @@ class Api::V1::ProductsController < ApplicationController
     paginated = nil
     options = {}
     if params[:q].present?
-      # options[:include] =['product_details']
-      options[:fields] = { product: [:name, :details] }
+      options[:fields] = { product: %i[name details] }
       products = Product.all.search(params[:q])
       products = products.order(created_at: :desc)
       paginated = paginate(products)
     end
-    products.present? ? render_collection(paginated, options) : :not_found
+    if products.present?
+      render_collection(paginated, options)
+    else
+      render json: { error: 'No products found' }, status: :not_found
+    end
   end
 
   def create
-    product = Product.new(user: current_user,
-                          name: product_params[:name],
-                          short_description: product_params[:short_description],
-                          description: product_params[:description],
-                          active: product_params[:active],
-                          country_origin: product_params[:country_origin],
-                          images: product_params[:images],
-    )
-    product.tag_list = product_params[:tags] unless product_params[:tags].blank?
+    product = build_product_from_params
 
     if product.save
       render json: serializer.new(product), status: :created
     else
-      render json: error_response(product)
+      render json: error_response(product, 'Failed to create the product'), status: :unprocessable_entity
     end
   end
 
   def show
-    options = {}
+    options = { include: ['product_details'] }
     product = Product.find(params[:id])
-    options[:include] = ['product_details']
-    data = serializer.new(product, options)
-    render json: data, status: :ok
+    render json: serializer.new(product, options), status: :ok
   end
 
   def update
     product = Product.find(params[:id])
 
-    update_product_attributes(product, product_params)
+    Product.transaction do
+      update_product_attributes(product, product_params)
 
-    if product.save
-      render json: serializer.new(product), status: :ok
-    else
-      render json: error_response(product), status: :unprocessable_entity
+      if product.save
+        render json: serializer.new(product), status: :ok
+      else
+        render json: error_response(product, 'Failed to update the product'), status: :unprocessable_entity
+      end
     end
   end
 
@@ -90,13 +89,6 @@ class Api::V1::ProductsController < ApplicationController
     attributes_to_update.each do |attribute_name|
       update_attribute(product, attribute_name, params[attribute_name])
     end
-    # update_attribute(product, :name, params[:name])
-    # update_attribute(product, :short_description, params[:short_description])
-    # update_attribute(product, :description, params[:description])
-    # update_attribute(product, :active, params[:active])
-    # update_attribute(product, :country_origin, params[:country_origin])
-    # update_attribute(product, :tags, params[:tags])
-    # update_attribute(product, :images, params[:images])
   end
 
   def serializer
@@ -105,6 +97,20 @@ class Api::V1::ProductsController < ApplicationController
 
   def set_product
     Product.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Product not found' }, status: :not_found
+  end
+
+  def build_product_from_params
+    Product.new(
+      user: current_user,
+      name: product_params[:name],
+      short_description: product_params[:short_description],
+      description: product_params[:description],
+      active: product_params[:active],
+      country_origin: product_params[:country_origin],
+      images: product_params[:images]
+    ).tap { |product| product.tag_list = product_params[:tags] unless product_params[:tags].blank? }
   end
 
   def product_params
