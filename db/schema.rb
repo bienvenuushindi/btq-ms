@@ -154,7 +154,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_12_07_120217) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.date "date", default: "2023-08-09"
+    t.date "date", default: "2024-01-15"
     t.index ["user_id"], name: "index_requisitions_on_user_id"
   end
 
