@@ -52,6 +52,7 @@ module UtilitiesHelper
   end
 
   def attachment_blob_url(attachment)
-    Rails.application.routes.url_helpers.rails_blob_path(attachment, only_path: true)
+    # Rails.application.routes.url_helpers.rails_blob_path(attachment, only_path: true)
+    attachment.blob.url
   end
 end
