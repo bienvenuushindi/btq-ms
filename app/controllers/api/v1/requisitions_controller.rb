@@ -60,14 +60,14 @@ class Api::V1::RequisitionsController < ApplicationController
   end
 
   def show
-    options = {}
-    render json: serializer.new(set_requisition, options), status: :ok
+    render json: serializer.new(set_requisition), status: :ok
   end
+
 
   def find_by_date
     date_to_search = Date.parse(params[:date])
     records = Requisition.find_by_date(date_to_search)
-    render json: serializer.new(records), status: :ok
+    render json: serializer.new(records || {} ), status: :ok
   end
 
   def remove_item
