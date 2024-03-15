@@ -45,6 +45,7 @@ Rails.application.routes.draw do
       resources :requisitions, only: [:index, :create, :show, :update] do
         collection do
           get 'date/:date', to: 'requisitions#find_by_date'
+          get 'recent', to: 'home#most_recent_requisitions'
         end
         member do
           delete 'product_details/:product_detail_id/remove_item', to: 'requisitions#remove_item', as: :remove_item
@@ -63,6 +64,7 @@ Rails.application.routes.draw do
       get '/current_user', to: 'current_user#index'
       get 'quantity_types', to: 'requisition_products#quantity_types'
       get 'currencies', to: 'requisition_products#currencies'
+      get 'check-auth', to: 'authentication#check_auth'
     end
   end
 end
