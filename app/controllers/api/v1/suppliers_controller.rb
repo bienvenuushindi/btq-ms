@@ -1,5 +1,5 @@
 class Api::V1::SuppliersController < ApplicationController
-  before_action :set_supplier, only: %i[show update]
+  before_action -> { find_record(Supplier) }, only: %i[show update]
 
   def index
     options = {}

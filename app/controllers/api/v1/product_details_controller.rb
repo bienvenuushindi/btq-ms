@@ -1,5 +1,5 @@
 class Api::V1::ProductDetailsController < ApplicationController
-  before_action :set_product, only: %i[create index]
+  before_action -> { find_record(ProductDetail) }, only: %i[create index]
 
   def index
     product_details = set_product.product_details

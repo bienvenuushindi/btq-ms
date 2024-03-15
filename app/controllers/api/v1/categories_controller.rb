@@ -1,5 +1,5 @@
 class Api::V1::CategoriesController < ApplicationController
-  before_action :set_category, only: %i[show destroy]
+  before_action -> { find_record(Category) }, only: %i[show destroy]
 
   def index
     categories = Category.all

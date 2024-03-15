@@ -1,5 +1,5 @@
 class Api::V1::PriceDetailsController < ApplicationController
-  before_action :set_price_detail, only: %i[show]
+  before_action -> { find_record(PriceDetail) }, only: %i[show]
 
   def index
     prices = PriceDetail.where(product_detail_id: params[:product_detail_id])

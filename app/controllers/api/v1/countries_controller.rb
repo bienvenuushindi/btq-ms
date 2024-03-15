@@ -1,5 +1,5 @@
 class Api::V1::CountriesController < ApplicationController
-  before_action :set_country, only: %i[show]
+  before_action -> { find_record(Country) }, only: %i[show]
 
   def index
     data =  serializer.new(Country.all)

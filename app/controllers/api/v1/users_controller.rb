@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :set_user, only: %i[show]
+  before_action -> { find_record(User) }, only: %i[show]
 
   def index
     data = UserSerializer.new(User.all)

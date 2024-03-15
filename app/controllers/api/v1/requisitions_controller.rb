@@ -1,5 +1,5 @@
 class Api::V1::RequisitionsController < ApplicationController
-  before_action :set_requisition, only: %i[show]
+  before_action -> { find_record(Requisition) }, only: %i[show]
 
   def index
     options = { fields: { requisition: %i[total_price count_products count_products_bought price_currency archived date] } }

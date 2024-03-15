@@ -1,5 +1,5 @@
 class Api::V1::ProductsController < ApplicationController
-  before_action :set_product, only: %i[show]
+  before_action -> { find_record(Product) }, only: %i[show]
 
   def index
     products = Product.all

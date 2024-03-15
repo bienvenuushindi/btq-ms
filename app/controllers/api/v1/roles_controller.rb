@@ -1,5 +1,5 @@
 class Api::V1::RolesController < ApplicationController
-  before_action :set_role, only: %i[show]
+  before_action -> { find_record(Role) }, only: %i[show]
 
   def index
     render json: fetch_response(Role.all), status: :ok

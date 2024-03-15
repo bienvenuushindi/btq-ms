@@ -1,5 +1,5 @@
 class Api::V1::TagsController < ApplicationController
-  before_action :set_tag, only: %i[show]
+  before_action -> { find_record(Tag) },only: %i[show]
 
   def index
     render json: serializer.new(Tag.all), status: :ok

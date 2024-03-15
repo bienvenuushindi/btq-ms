@@ -1,30 +1,30 @@
 class Api::V1::AddressesController < ApplicationController
-  before_action :set_address, only: %i[show]
+  before_action -> { find_record(Address) }, only: %i[show]
 
   def index
-    render json: fetch_response(Address.all), status: :ok
+    render json: serialize_resources(Address.all, serializer), status: :ok
   end
 
   def create
-    address = Address.new(address_params)
+    @address = Address.new(address_params)
     if address.save
-      render json: created_response(address), status: :created
+      render json: serialize_resource(@address, serializer), status: :created
     else
-      render json: error_response(address)
+      render json: error_response(@address)
     end
   end
 
   def show
-    render json: fetch_response(set_address), status: :ok
+    render json: serialize_resource(@address, serializer), status: :ok
   end
 
   private
 
-  def set_address
-    Address.find(params[:id])
-  end
-
   def address_params
     params.require(:address).permit(:line1, :line2, :city, :phone_number1, :phone_number2, :country_id)
+  end
+
+  def serializer
+    AddressSerializer
   end
 end
