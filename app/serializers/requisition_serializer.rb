@@ -18,8 +18,18 @@ class RequisitionSerializer
   end
 
   attribute :product_items do |object|
-    object.product_details.joins(:product).select('product_details.*, products.name,product_details_requisitions.*').distinct.map do |product_detail|
-      product_detail_hash = product_detail.as_json # Convert ProductDetail to hash and exclude images
+    # Fetch product details joined with products and product_details_requisitions
+    # Select columns in the order that ensures product_details.id overrides other IDs
+    # Ensure that the selection order of columns prioritizes product_details.id to override other IDs
+    object.product_details
+          .joins(:product)
+          .select('products.name, product_details_requisitions.*, product_details.*')
+          .distinct
+          .map do |product_detail|
+      # Convert ProductDetail to hash and exclude images
+      product_detail_hash = product_detail.as_json
+  
+      # Build the final hash with additional attributes
       {
         **product_detail_hash, # Spread the attributes of product_detail
         image_urls: product_detail.image_urls, # Use the image_urls method from the ProductDetail model
@@ -27,4 +37,5 @@ class RequisitionSerializer
       }
     end
   end
+  
 end
