@@ -3,7 +3,7 @@ class Api::V1::SuppliersController < ApplicationController
 
   def index
     options = {}
-    options[:fields] = { supplier: [:id, :shop_name, :image_urls, :address1, :address2, :city, :country, :code, :tel1, :tel2] }
+    options[:fields] = { supplier: [:id, :shop_name, :image_urls, :address] }
     suppliers = Supplier.all
     suppliers = suppliers.search(params[:q]) if params[:q].present?
     suppliers = suppliers.reorder(sort_column => sort_direction)
@@ -27,7 +27,7 @@ class Api::V1::SuppliersController < ApplicationController
     paginated = nil
     options = {}
     if params[:q].present?
-      options[:fields] = { supplier: [:id, :shop_name, :image_urls, :address1, :address2, :city, :country, :code, :tel1, :tel2] }
+      options[:fields] = { supplier: [:id, :shop_name, :image_urls, :address] }
       suppliers = Supplier.all.search(params[:q]).limit(4)
       if params[:product_detail_id].present?
         prod_supplier_ids = ProductDetail.find_by(id: params[:product_detail_id]).suppliers.pluck(:id)
