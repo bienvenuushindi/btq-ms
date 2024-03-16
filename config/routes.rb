@@ -64,7 +64,9 @@ Rails.application.routes.draw do
       get '/current_user', to: 'current_user#index'
       get 'quantity_types', to: 'requisition_products#quantity_types'
       get 'currencies', to: 'requisition_products#currencies'
-      get 'check-auth', to: 'authentication#check_auth'
+      get 'check_auth', to: 'authentication#check_auth'
     end
   end
+
+  match '*path', to: 'application#routing_error', via: :all
 end

@@ -10,13 +10,16 @@ class ApplicationController < ActionController::API
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
   respond_to :json
 
+  def routing_error
+    render json: { error: 'Route not found' }, status: :not_found
+  end
+
   protected
 
   def configure_permitted_parameters
     devise_parameter_sanitizer.permit(:sign_up, keys: %i[name avatar phone_number role_id])
     devise_parameter_sanitizer.permit(:account_update, keys: %i[name avatar phone_number])
   end
-
 
   def find_record(model_class)
     record = model_class.find(params[:id])

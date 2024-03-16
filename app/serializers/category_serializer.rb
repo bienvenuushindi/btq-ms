@@ -1,5 +1,4 @@
-class CategorySerializer
-  include JSONAPI::Serializer
+class CategorySerializer < Serializer
   attributes  :name, :description, :active, :count_products, :parent_category_id, :children
   attribute :created_at do |object|
     object.created_at.strftime("%B %-d, %Y")

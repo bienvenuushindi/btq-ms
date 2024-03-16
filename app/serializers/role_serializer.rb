@@ -1,4 +1,3 @@
-class RoleSerializer
-  include JSONAPI::Serializer
+class RoleSerializer < Serializer
   attributes :id , :name
 end
