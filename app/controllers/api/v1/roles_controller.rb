@@ -2,26 +2,26 @@ class Api::V1::RolesController < ApplicationController
   before_action -> { find_record(Role) }, only: %i[show]
 
   def index
-    render json: fetch_response(Role.all), status: :ok
+    render json: serialize_resources(Role.all, serializer), status: :ok
   end
 
   def create
-    role = Role.new(role_params)
-    if role.save
-      render json: created_response(role), status: :created
+    @role = Role.new(role_params)
+    if @role.save
+      render json: serialize_resource(@role, serializer), status: :created
     else
-      render json: error_response(role)
+      render json: error_response(@role)
     end
   end
 
   def show
-    render json: fetch_response(set_role), status: :ok
+    render json: serialize_resource(@role, serializer), status: :ok
   end
 
   private
 
-  def set_role
-    Role.find(params[:id])
+  def serializer
+    RoleSerializer
   end
 
   def role_params

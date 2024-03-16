@@ -1,5 +1,5 @@
 class Api::V1::ProductsController < ApplicationController
-  before_action -> { find_record(Product) }, only: %i[show]
+  before_action -> { find_record(Product) }, only: %i[show update]
 
   def index
     products = Product.all
@@ -10,7 +10,7 @@ class Api::V1::ProductsController < ApplicationController
     paginated = paginate(products)
 
     if products.present?
-      render_collection(paginated)
+      render_collection(paginated,serializer)
     else
       render json: { error: 'No products found' }, status: :not_found
     end
@@ -45,38 +45,35 @@ class Api::V1::ProductsController < ApplicationController
       paginated = paginate(products)
     end
     if products.present?
-      render_collection(paginated, options)
+      render_collection(paginated, serializer, options)
     else
       render json: { error: 'No products found' }, status: :not_found
     end
   end
 
   def create
-    product = build_product_from_params
+    @product = build_product_from_params
 
-    if product.save
-      render json: serializer.new(product), status: :created
+    if @product.save
+      render json: serialize_resource(@product, serializer), status: :created
     else
-      render json: error_response(product, 'Failed to create the product'), status: :unprocessable_entity
+      render json: error_response(@product, 'Failed to create the product'), status: :unprocessable_entity
     end
   end
 
   def show
     options = { include: ['product_details'] }
-    product = Product.find(params[:id])
-    render json: serializer.new(product, options), status: :ok
+    render json: serialize_resource(@product, serializer, options), status: :ok
   end
 
   def update
-    product = Product.find(params[:id])
-
     Product.transaction do
-      update_product_attributes(product, product_params)
+      update_product_attributes(@product, product_params)
 
-      if product.save
-        render json: serializer.new(product), status: :ok
+      if @product.save
+        render json: serialize_resource(@product, serializer), status: :ok
       else
-        render json: error_response(product, 'Failed to update the product'), status: :unprocessable_entity
+        render json: error_response(@product, 'Failed to update the product'), status: :unprocessable_entity
       end
     end
   end
@@ -93,12 +90,6 @@ class Api::V1::ProductsController < ApplicationController
 
   def serializer
     ProductSerializer
-  end
-
-  def set_product
-    Product.find(params[:id])
-  rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Product not found' }, status: :not_found
   end
 
   def build_product_from_params

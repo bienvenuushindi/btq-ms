@@ -7,7 +7,7 @@ class Api::V1::CategoriesController < ApplicationController
     categories = categories.reorder(sort_column => sort_direction)
     paginated = paginate(categories)
     
-    categories.present? ? render_collection(paginated) : :not_found
+    categories.present? ? render_collection(paginated, serializer) : :not_found
   end
 
   def sort_column
@@ -27,14 +27,14 @@ class Api::V1::CategoriesController < ApplicationController
     )
 
     if @category.save
-      render json: created_response(@category), status: :created
+      render json: serialize_resource(@category, serializer), status: :created
     else
       render json: error_response(@category), status: :unprocessable_entity
     end
   end
 
   def show
-    render json: fetch_response(@category), status: :ok
+    render json: serialize_resource(@category, serializer), status: :ok
   end
 
   def destroy
@@ -51,10 +51,6 @@ class Api::V1::CategoriesController < ApplicationController
 
   def serializer
     CategorySerializer
-  end
-
-  def set_category
-    @category = Category.find(params[:id])
   end
 
   def category_params

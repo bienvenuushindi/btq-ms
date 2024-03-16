@@ -2,31 +2,28 @@ class Api::V1::CountriesController < ApplicationController
   before_action -> { find_record(Country) }, only: %i[show]
 
   def index
-    data =  serializer.new(Country.all)
+    data =  serialize_resource(Country.all, serializer)
     render json: data, status: :ok
   end
 
   def create
-    country = Country.new(country_params)
-    if country.save
-      render json: serializer.new(country), status: :created
+    @country = Country.new(country_params)
+    if @country.save
+      render json: serialize_resource(@country, serializer), status: :created
+
     else
-      render json: error_response(country)
+      render json: error_response(@country)
     end
   end
 
   def show
-    render json: serializer.new(set_country), status: :ok
+    render json: serialize_resource(@country, serializer), status: :ok
   end
 
   private
 
   def serializer
     CountrySerializer
-  end
-
-  def set_country
-    Country.find(params[:id])
   end
 
   def country_params

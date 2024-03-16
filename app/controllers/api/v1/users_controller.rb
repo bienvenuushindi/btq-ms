@@ -2,18 +2,16 @@ class Api::V1::UsersController < ApplicationController
   before_action -> { find_record(User) }, only: %i[show]
 
   def index
-    data = UserSerializer.new(User.all)
-    render json: data, status: :ok
+    render json: serialize_resources(User.all, serializer), status: :ok
   end
 
   def show
-    data = UserSerializer.new(set_user)
-    render json: data, status: :ok
+    render json: serialize_resource(@user, serializer), status: :ok
   end
 
   private
 
-  def set_user
-    User.find(params[:id])
+  def serializer
+    UserSerializer
   end
 end

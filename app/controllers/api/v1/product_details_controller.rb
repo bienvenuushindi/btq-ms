@@ -1,10 +1,13 @@
 class Api::V1::ProductDetailsController < ApplicationController
-  before_action -> { find_record(ProductDetail) }, only: %i[create index]
+  before_action -> { find_record(ProductDetail) }, only: %i[show update suppliers]
+  before_action :set_product, only: %i[create index]
 
   def index
-    product_details = set_product.product_details
+    product_details = @product.product_details
+    return render json: { error: 'Product details not found' }, status: :not_found unless product_details
+
     data = product_details.with_attached_images.order(created_at: :desc)
-    render json: serializer.new(data), status: :ok
+    render json: serialize_resources(data, serializer), status: :ok
   end
 
   def expiring_soon
@@ -13,7 +16,7 @@ class Api::V1::ProductDetailsController < ApplicationController
     options[:fields] = { product_detail: [:id, :size, :expired_date, :product_name, :image_urls] }
     products = ProductDetail.expired_soon
     products = products.last_soon_expired(params.fetch(:limit, 5)) if params[:limit].present?
-    render json: serializer.new(products, options), status: :ok
+    render json: serialize_resources(products, serializer, options), status: :ok
   end
 
   def expired
@@ -22,48 +25,45 @@ class Api::V1::ProductDetailsController < ApplicationController
     options[:fields] = { product_detail: [:id, :size, :expired_date, :product_name, :image_urls] }
     products = ProductDetail.expired
     products = products.last_expired(params.fetch(:limit, 5)) if params[:limit].present?
-    render json: serializer.new(products, options), status: :ok
+    render json: serialize_resources(products, serializer, options), status: :ok
   end
 
   def create
-    product_detail = ProductDetail.new(size: product_detail_params[:size],
+    @product_detail = ProductDetail.new(size: product_detail_params[:size],
                                        expired_date: product_detail_params[:expired_date],
                                        unit_price: product_detail_params[:unit_price],
                                        dozen_price: product_detail_params[:dozen_price],
                                        box_price: product_detail_params[:box_price],
                                        dozen_units: product_detail_params[:dozen_units],
                                        box_units: product_detail_params[:box_units],
-                                       product: set_product,
+                                       product: @product,
                                        status: product_detail_params[:status],
                                        images: product_detail_params[:images]
     )
-    product_detail.tag_list = product_detail_params[:tags] unless product_detail_params[:tags].blank?
-    if product_detail.save
-      render json: created_response(product_detail), status: :created
+    @product_detail.tag_list = product_detail_params[:tags] unless product_detail_params[:tags].blank?
+    if @product_detail.save
+      render json: serialize_resource(@product_detail, serializer), status: :created
     else
-      render json: error_response(product_detail)
+      render json: error_response(@product_detail)
     end
   end
 
   def suppliers
     options = {}
     options[:fields] = { product_detail: [:suppliers] }
-    render json: serializer.new(set_product_detail, options), status: :ok
+    render json: serialize_resources(@product_detail, serializer, options), status: :ok
   end
 
   def show
-    product = ProductDetail.find(params[:id])
-    data = serializer.new(product)
-    render json: data, status: :ok
+    render json: serialize_resource(@product_detail, serializer), status: :ok
   end
 
   def update
-    product_detail = ProductDetail.find(params[:id])
-    update_product_attributes(product_detail, product_detail_params)
-    if product_detail.save
-      render json: serializer.new(product_detail), status: :ok
+    update_product_attributes(@product_detail, product_detail_params)
+    if @product_detail.save
+      render json: serialize_resource(@product_detail, serializer), status: :ok
     else
-      render json: error_response(product_detail), status: :unprocessable_entity
+      render json: error_response(@product_detail), status: :unprocessable_entity
     end
   end
 
@@ -87,12 +87,10 @@ class Api::V1::ProductDetailsController < ApplicationController
     ProductDetailSerializer
   end
 
-  def set_product_detail
-    ProductDetail.find(params[:id])
-  end
-
   def set_product
-    Product.find(params[:product_id])
+    @product = Product.find(params[:product_id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Product not found' }, status: :not_found
   end
 
   def product_detail_params

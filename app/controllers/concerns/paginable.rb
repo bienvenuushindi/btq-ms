@@ -16,14 +16,12 @@ module Paginable
     paginator.call(collection, params:, base_url: request.url)
   end
 
-  def render_collection(paginated, opt = nil)
-    options = {
+  def render_collection(paginated, serializer_class, options = {})
+    attributes = serialize_resources(paginated.items, serializer_class, options)
+    pagination_options = {
       meta: paginated.meta.to_h, # Will get total pages, total count, etc.
       links: paginated.links.to_h
     }
-    options = options.merge(opt) unless opt.nil?
-    paginated_result = serializer.new(paginated.items, options)
-
-    render json: paginated_result, status: :ok
+    render json: { data: attributes}.merge(pagination_options), status: :ok
   end
 end

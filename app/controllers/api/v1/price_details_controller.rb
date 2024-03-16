@@ -18,17 +18,13 @@ class Api::V1::PriceDetailsController < ApplicationController
   end
 
   def show
-    render json: fetch_response(set_price_detail), status: :ok
+    render json: serialize_resource(@price_detail, serializer), status: :ok
   end
 
   private
 
   def serializer
     PriceDetailSerializer
-  end
-
-  def set_price_detail
-    PriceDetail.find(params[:id])
   end
 
   def price_detail_params

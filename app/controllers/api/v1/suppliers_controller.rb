@@ -10,7 +10,7 @@ class Api::V1::SuppliersController < ApplicationController
     suppliers = suppliers.with_attached_images.order(created_at: :desc)
     paginated = paginate(suppliers)
 
-    suppliers.present? ? render_collection(paginated, options) : :not_found
+    suppliers.present? ? render_collection(paginated, serializer, options) : :not_found
   end
 
 
@@ -37,13 +37,13 @@ class Api::V1::SuppliersController < ApplicationController
       suppliers = suppliers.order(created_at: :desc)
       paginated = paginate(suppliers)
     end
-    suppliers.present? ? render_collection(paginated, options) : :not_found
+    suppliers.present? ? render_collection(paginated, serializer, options) : :not_found
   end
 
   def create
-    supplier = Supplier.new(shop_name: supplier_params[:shop_name], user: current_user, images: supplier_params[:images])
-    supplier.tag_list = supplier_params[:tags] unless supplier_params[:tags].blank?
-    if supplier.save
+    @supplier = Supplier.new(shop_name: supplier_params[:shop_name], user: current_user, images: supplier_params[:images])
+    @supplier.tag_list = supplier_params[:tags] unless supplier_params[:tags].blank?
+    if @supplier.save
       country = Country.create_with(name: supplier_params[:country_name]).find_or_create_by(code: supplier_params[:country_id])
       Address.create!(line1: supplier_params[:address1],
                       city: supplier_params[:city],
@@ -51,28 +51,25 @@ class Api::V1::SuppliersController < ApplicationController
                       phone_number1: supplier_params[:tel1],
                       phone_number2: supplier_params[:tel2],
                       line2: supplier_params[:address2],
-                      addressable: supplier)
-      render json: serializer.new(supplier), status: :created
+                      addressable: @supplier)
+      render json: serialize_resource(@supplier, serializer), status: :created
     else
-      render json: error_response(supplier)
+      render json: error_response(@supplier)
     end
   end
 
   def show
     options = {}
-    supplier = Supplier.find(params[:id])
     options[:fields] = { supplier: [:id, :shop_name, :tags, :image_urls, :address1, :address2, :city, :country, :code, :tel1, :tel2] }
-    data = serializer.new(supplier, options)
-    render json: data, status: :ok
+    render json: serialize_resource(@supplier, serializer), status: :ok
   end
 
   def update
-    supplier = Supplier.find(params[:id])
-    update_supplier_attributes(supplier, supplier_params)
-    if supplier.save
-      render json: serializer.new(supplier), status: :ok
+    update_supplier_attributes(@supplier, supplier_params)
+    if @supplier.save
+      render json: serialize_resource(@supplier, serializer), status: :ok
     else
-      render json: error_response(supplier), status: :unprocessable_entity
+      render json: error_response(@supplier), status: :unprocessable_entity
     end
   end
   
@@ -86,10 +83,6 @@ class Api::V1::SuppliersController < ApplicationController
 
   def serializer
     SupplierSerializer
-  end
-
-  def set_supplier
-    Supplier.find(params[:id])
   end
 
   def supplier_params

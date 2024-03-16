@@ -7,7 +7,7 @@ class Api::V1::AddressesController < ApplicationController
 
   def create
     @address = Address.new(address_params)
-    if address.save
+    if @address.save
       render json: serialize_resource(@address, serializer), status: :created
     else
       render json: error_response(@address)
