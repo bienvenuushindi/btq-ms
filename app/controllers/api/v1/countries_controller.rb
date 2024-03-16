@@ -2,7 +2,7 @@ class Api::V1::CountriesController < ApplicationController
   before_action -> { find_record(Country) }, only: %i[show]
 
   def index
-    data =  serialize_resource(Country.all, serializer)
+    data =  serialize_resources(Country.all, serializer)
     render json: data, status: :ok
   end
 
