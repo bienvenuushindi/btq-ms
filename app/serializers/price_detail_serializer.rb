@@ -10,12 +10,8 @@ class PriceDetailSerializer < Serializer
       price_details.group_by(&:supplier)
                    .map do |supplier, details|
         {
-          id: supplier.id,
-          type: 'supplier_price_details',
-          attributes: {
-            supplier: SupplierSerializer.new(supplier),
-            price_details: details.map { |detail| new(detail).serializable_hash[:data][:attributes] }
-          }
+          supplier: SupplierSerializer.new(supplier).serializable_hash[:data][:attributes],
+          price_details: details.map { |detail| new(detail).serializable_hash[:data][:attributes] }
         }
       end
     end

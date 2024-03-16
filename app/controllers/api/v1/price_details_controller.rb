@@ -1,10 +1,8 @@
 class Api::V1::PriceDetailsController < ApplicationController
-  before_action -> { find_record(PriceDetail) }, only: %i[show]
-
   def index
-    prices = PriceDetail.where(product_detail_id: params[:product_detail_id])
-    grouped_by_supplier = PriceDetailSerializer.group_by_supplier(prices)
-    render json: grouped_by_supplier, status: :ok
+    product_detail = ProductDetail.find_by(id: params[:product_detail_id])
+    prices = product_detail.price_details
+    render json: PriceDetailSerializer.group_by_supplier(prices), status: :ok
   end
 
   def create
@@ -18,7 +16,7 @@ class Api::V1::PriceDetailsController < ApplicationController
   end
 
   def show
-    render json: serialize_resource(@price_detail, serializer), status: :ok
+    render json: serialize_resource(PriceDetail.find(params[:id]), serializer), status: :ok
   end
 
   private

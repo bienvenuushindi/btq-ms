@@ -1,19 +1,19 @@
 class Api::V1::ProductDetailsController < ApplicationController
-  before_action -> { find_record(ProductDetail) }, only: %i[show update suppliers]
+  before_action -> { find_record(ProductDetail) }, only: %i[show update]
   before_action :set_product, only: %i[create index]
 
   def index
+    options = {}
     product_details = @product.product_details
-    return render json: { error: 'Product details not found' }, status: :not_found unless product_details
-
+    options[:fields] = { product_detail: %i[id size currency expired_date dozen_units box_units created_at image_urls status product_name] }
     data = product_details.with_attached_images.order(created_at: :desc)
-    render json: serialize_resources(data, serializer), status: :ok
+    render json: serialize_resources(data, serializer, options), status: :ok
   end
 
   def expiring_soon
     options = {}
     options[:meta] = { count: ProductDetail.count_expired_soon }
-    options[:fields] = { product_detail: [:id, :size, :expired_date, :product_name, :image_urls] }
+    options[:fields] = { product_detail: %i[:id size expired_date product_name image_urls] }
     products = ProductDetail.expired_soon
     products = products.last_soon_expired(params.fetch(:limit, 5)) if params[:limit].present?
     render json: serialize_resources(products, serializer, options), status: :ok
@@ -22,7 +22,7 @@ class Api::V1::ProductDetailsController < ApplicationController
   def expired
     options = {}
     options[:meta] = { count: ProductDetail.count_expired }
-    options[:fields] = { product_detail: [:id, :size, :expired_date, :product_name, :image_urls] }
+    options[:fields] = { product_detail: %i[:id size expired_date product_name image_urls] }
     products = ProductDetail.expired
     products = products.last_expired(params.fetch(:limit, 5)) if params[:limit].present?
     render json: serialize_resources(products, serializer, options), status: :ok
@@ -51,7 +51,7 @@ class Api::V1::ProductDetailsController < ApplicationController
   def suppliers
     options = {}
     options[:fields] = { product_detail: [:suppliers] }
-    render json: serialize_resources(@product_detail, serializer, options), status: :ok
+    render json: serialize_resource(ProductDetail.find(params[:id]), serializer, options), status: :ok
   end
 
   def show
