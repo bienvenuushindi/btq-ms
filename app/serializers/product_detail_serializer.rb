@@ -6,12 +6,13 @@ class ProductDetailSerializer < Serializer
   has_many :tags
 
   attribute :suppliers do |object|
-    price_details = self.fetch_supplier_details(object)
+    price_details = object.suppliers_prices
     price_details.map do |pd|
       {
         id: pd.id,
         currency: pd.currency,
         price: pd.price,
+        quantity_type: pd.quantity_type,
         shop_name: pd.shop_name,
         last_update_at: pd.last_update_at,
         address: {
@@ -26,10 +27,8 @@ class ProductDetailSerializer < Serializer
     end
   end
 
-
-
   attribute :categories_suppliers do |object|
-    object.product.categories.joins(:suppliers).select('suppliers.*')
+    object.categories_suppliers
   end
 
   attribute :tags do |object|
@@ -52,26 +51,6 @@ class ProductDetailSerializer < Serializer
     def format_price(price)
       price.to_f.zero? ? '-' : price.to_s
     end
-
-    def fetch_supplier_details(object)
-      object.price_details
-            .joins(supplier: [:country, :address])
-            .select(
-              'DISTINCT ON (suppliers.id) price_details.currency',
-              'price_details.id',
-              'price_details.price',
-              'suppliers.shop_name',
-              'countries.name as country',
-              Arel.sql("TO_CHAR(price_details.updated_at, 'FMMonth FMDD, YYYY') AS last_update_at"),
-              'addresses.city',
-              'addresses.line1 as address1',
-              'addresses.line2 as address2',
-              'addresses.phone_number1 as tel1',
-              'addresses.phone_number2 as tel2'
-            )
-            .order('suppliers.id', 'price_details.updated_at DESC')
-    end
-
   end
 
 end

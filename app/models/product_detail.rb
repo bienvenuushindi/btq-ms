@@ -46,7 +46,25 @@ class ProductDetail < ApplicationRecord
   end
 
   def categories_suppliers
-    product.categories.joins(:suppliers).select('suppliers.*')
+    product.joins(categories: [:suppliers]).select('suppliers.*')
+  end
+
+  def suppliers_prices
+    price_details.joins(supplier: [:country, :address]).select(
+            'DISTINCT ON (suppliers.id) price_details.currency',
+            'price_details.id',
+            'price_details.price',
+            'price_details.quantity_type',
+            'suppliers.shop_name',
+            'countries.name as country',
+            Arel.sql("TO_CHAR(price_details.updated_at, 'FMMonth FMDD, YYYY') AS last_update_at"),
+            'addresses.city',
+            'addresses.line1 as address1',
+            'addresses.line2 as address2',
+            'addresses.phone_number1 as tel1',
+            'addresses.phone_number2 as tel2'
+          )
+          .order('suppliers.id', 'price_details.updated_at DESC')
   end
 
 end
