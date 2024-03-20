@@ -63,9 +63,16 @@ class Api::V1::RequisitionsController < ApplicationController
 
   def find_by_date
     date_to_search = Date.parse(params[:date])
-    records = Requisition.find_by_date(date_to_search)
-    render json: serialize_resources(records || {}, serializer ), status: :ok
+    record = Requisition.find_by_date(date_to_search)
+    if record.present?
+      render json: serialize_resource(record, serializer), status: :ok
+    else
+      render json: {}, status: :not_found
+    end
+  rescue ArgumentError => e
+    render json: { error: 'Invalid date format' }, status: :unprocessable_entity
   end
+
 
   def remove_item
     product_detail = ProductDetail.find(params[:product_detail_id])
