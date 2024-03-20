@@ -16,6 +16,6 @@ module Findable
 
   def record_not_found(exception)
     model_name = exception.model.constantize.model_name.human.titleize
-    render json: { error: "#{model_name} not found" }, status: :not_found
+    render json: { data: {}, message: "#{model_name} not found" }, status: :not_found
   end
 end
