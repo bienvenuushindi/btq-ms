@@ -10,7 +10,7 @@ class Api::V1::SuppliersController < ApplicationController
     suppliers = suppliers.with_attached_images.order(created_at: :desc)
     paginated = paginate(suppliers)
 
-    suppliers.present? ? render_collection(paginated, serializer, options) : :not_found
+   render_collection(paginated, serializer, options)
   end
 
 
@@ -37,7 +37,8 @@ class Api::V1::SuppliersController < ApplicationController
       suppliers = suppliers.order(created_at: :desc)
       paginated = paginate(suppliers)
     end
-    suppliers.present? ? render_collection(paginated, serializer, options) : :not_found
+     render_collection(paginated, serializer, options)
+
   end
 
   def create
