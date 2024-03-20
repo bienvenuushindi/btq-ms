@@ -1,5 +1,5 @@
 class RequisitionSerializer < Serializer
-  attributes :total_price, :count_products, :count_products_bought, :price_currency, :archived, :date
+  attributes :id, :total_price, :count_products, :count_products_bought, :price_currency, :archived, :date
   attribute :product_items do |object|
     object.product_details.with_attached_images.joins(:product).select('product_details.*, products.name')
   end
