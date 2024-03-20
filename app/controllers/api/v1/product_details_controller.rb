@@ -1,5 +1,5 @@
 class Api::V1::ProductDetailsController < ApplicationController
-  before_action -> { find_record(ProductDetail) }, only: %i[show update]
+  before_action :set_product_detail, only: %i[show update]
   before_action :set_product, only: %i[create index]
 
   def index
@@ -12,20 +12,30 @@ class Api::V1::ProductDetailsController < ApplicationController
 
   def expiring_soon
     options = {}
-    options[:meta] = { count: ProductDetail.count_expired_soon }
     options[:fields] = { product_detail: %i[:id size expired_date product_name image_urls] }
     products = ProductDetail.expired_soon
     products = products.last_soon_expired(params.fetch(:limit, 5)) if params[:limit].present?
-    render json: serialize_resources(products, serializer, options), status: :ok
+    paginated = paginate(products)
+
+    if products.present?
+      render_collection(paginated,serializer, options)
+    else
+      render json: { error: 'No products found' }, status: :not_found
+    end
   end
 
   def expired
     options = {}
-    options[:meta] = { count: ProductDetail.count_expired }
     options[:fields] = { product_detail: %i[:id size expired_date product_name image_urls] }
     products = ProductDetail.expired
     products = products.last_expired(params.fetch(:limit, 5)) if params[:limit].present?
-    render json: serialize_resources(products, serializer, options), status: :ok
+    paginated = paginate(products)
+
+    if products.present?
+      render_collection(paginated,serializer, options)
+    else
+      render json: { error: 'No products found' }, status: :not_found
+    end
   end
 
   def create
@@ -91,6 +101,10 @@ class Api::V1::ProductDetailsController < ApplicationController
     @product = Product.find(params[:product_id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: 'Product not found' }, status: :not_found
+  end
+
+  def set_product_detail
+    @product_detail = ProductDetail.find(params[:id])
   end
 
   def product_detail_params
