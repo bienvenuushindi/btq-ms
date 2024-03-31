@@ -10,7 +10,7 @@ class ProductDetailRequisition < ApplicationRecord
   before_create :set_currency
   after_destroy :downgrade_product_count
   before_destroy :decrement_total_price
-  scope :bought, -> { where(found: true) }
+  scope :bought, -> { where(status: true) }
 
 
   def self.reverse_quantity_types
