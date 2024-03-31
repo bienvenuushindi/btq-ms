@@ -20,10 +20,10 @@ class Api::V1::ProductsController < ApplicationController
     active_count = Product.count_by_status(true)
     inactive_count = Product.count_by_status(false)
 
-    render json: {
+    render json: {data: {
       active: active_count,
       inactive: inactive_count
-    }, status: :ok
+    }}, status: :ok
   end
 
   def sort_column
