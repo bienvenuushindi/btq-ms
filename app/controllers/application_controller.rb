@@ -27,7 +27,7 @@ class ApplicationController < ActionController::API
   end
 
   def record_not_found(exception)
-    model_name = exception.model.constantize.model_name.human.titleize
-    render json: { error: "#{model_name} not found" }, status: :not_found
+    model_name = exception.model.constantize.model_name.human
+    render json: { "#{model_name}": nil}, status: :not_found
   end
 end
