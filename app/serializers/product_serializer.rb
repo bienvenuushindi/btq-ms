@@ -14,4 +14,10 @@ class ProductSerializer < Serializer
   attribute :created_at do |object|
     object.created_at.strftime("%B %-d, %Y")
   end
+  
+  attribute :product_details do |object|
+    options = {}
+    options[:fields] = { product: %i[name] }
+    ProductDetailSerializer.new(object.product_details, options).serializable_hash[:data].map { |data| data[:attributes] }
+  end
 end
