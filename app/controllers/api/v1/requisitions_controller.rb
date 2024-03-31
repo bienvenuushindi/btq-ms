@@ -95,7 +95,7 @@ class Api::V1::RequisitionsController < ApplicationController
   end
 
   def update_requisition_params
-    params.require(:requisition_product).permit(:price, :currency, :found, :quantity, :quantity_type, :note, :supplier_id, :expired_date)
+    params.require(:requisition_product).permit(:price, :currency, :status, :quantity, :quantity_type, :note, :supplier_id, :expired_date)
   end
 
   def requisition_params
