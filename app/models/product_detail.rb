@@ -46,7 +46,7 @@ class ProductDetail < ApplicationRecord
   end
 
   def categories_suppliers
-    product.joins(categories: [:suppliers]).select('suppliers.*')
+    Product.joins(categories: [:suppliers]).where(id: self.product_id).select('suppliers.*')
   end
 
   def suppliers_prices
