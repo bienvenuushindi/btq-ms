@@ -15,7 +15,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       get 'products/search', to: 'products#search'
       get 'products/stats', to: 'products#count_by_status'
-      get 'suppliers/search/filter/:product_detail_id', to: 'suppliers#search'
+      get 'suppliers/search/filter(/:product_detail_id)', to: 'suppliers#search'
       get 'tags/search', to: 'tags#search'
       resources :roles, only: [:index, :create, :show]
       resources :tags, only: [:index, :create, :show]
