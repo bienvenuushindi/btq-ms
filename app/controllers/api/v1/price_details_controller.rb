@@ -2,7 +2,7 @@ class Api::V1::PriceDetailsController < ApplicationController
   def index
     product_detail = ProductDetail.find_by(id: params[:product_detail_id])
     prices = product_detail.price_details
-    render json: PriceDetailSerializer.group_by_supplier(prices), status: :ok
+    render json: {data: PriceDetailSerializer.group_by_supplier(prices)}, status: :ok
   end
 
   def create
