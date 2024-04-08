@@ -3,14 +3,13 @@
 class Users::SessionsController < Devise::SessionsController
   include RackSessionsFix
   include JsonResponseHelper
+  include CustomSerializer
   respond_to :json
 
   private
 
   def respond_with(current_user, _opts = {})
-    data = { user: UserSerializer.new(current_user).serializable_hash[:data][:attributes] }
-    message = 'Logged in successfully.'
-    render json: created_response(data, message), status: :ok
+     render json: serialize_resource(current_user, UserSerializer), status: :ok
   end
 
   def respond_to_on_destroy
