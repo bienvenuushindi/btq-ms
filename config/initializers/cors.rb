@@ -5,12 +5,36 @@
 
 # Read more: https://github.com/cyu/rack-cors
 
+# Rails.application.config.middleware.insert_before 0, Rack::Cors do
+#   allow do
+#     origins "*"
+#     resource '*',
+#              expose: ["Authorization"],
+#              headers: :any,
+#              methods: [:get, :post, :put, :patch, :delete, :options, :head, :show]
+#   end
+# end
+
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
-  allow do
-    origins "*"
-    resource '*',
-             expose: ["Authorization"],
-             headers: :any,
-             methods: [:get, :post, :put, :patch, :delete, :options, :head, :show]
+  if Rails.env.development?
+    origins = %w[localhost:3000 localhost:3001 localhost:5000 staging.xyz.com www.xyz.com].freeze
+    allow do
+      origins origins
+      resource '*',
+               headers: :any,
+               expose: ["Authorization"],
+               credentials: true,
+               methods: [:get, :post, :put, :patch, :delete, :options, :head, :show]
+    end
+  else
+    origins = %w[staging.xyz.com www.xyz.com].freeze
+    allow do
+      origins origins
+      resource '*',
+               headers: :any,
+               expose: ["Authorization"],
+               credentials: true,
+               methods: [:get, :post, :put, :patch, :delete, :options, :head, :show]
+    end
   end
 end
