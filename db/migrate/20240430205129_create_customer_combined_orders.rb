@@ -3,9 +3,9 @@ class CreateCustomerCombinedOrders < ActiveRecord::Migration[7.0]
     create_table :customer_combined_orders do |t|
       t.references :product_detail, null: false, foreign_key: true
       t.string :status, limit: 25
-      t.decimal :quantity, precision: 8, scale: 2
+      t.integer :quantity, default: 0
       t.string :quantity_type, limit: 25
-      t.decimal :total_amount, precision: 8, scale: 2
+      t.decimal :total_amount,  scale: 2, default: 0.0
 
       t.timestamps
     end

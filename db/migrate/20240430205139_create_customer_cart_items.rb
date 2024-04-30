@@ -3,7 +3,7 @@ class CreateCustomerCartItems < ActiveRecord::Migration[7.0]
     create_table :customer_cart_items do |t|
       t.references :cart, null: false, foreign_key: true
       t.references :product_detail, null: false, foreign_key: true
-      t.decimal :quantity, precision: 8, scale: 2
+      t.integer :quantity, default: 0
       t.string :quantity_type, limit: 25
 
       t.timestamps
