@@ -42,7 +42,7 @@ class ProductDetail < ApplicationRecord
   end
 
   def image_urls
-    images.attached? ? images.map { |image| image.blob.url } : [ActionController::Base.helpers.image_url('no-img.png')]
+    images.attached? ? images.map { |image| image.blob.url } :  [ActionController::Base.helpers.image_url('no-img.png')]
   end
 
   def categories_suppliers
@@ -66,5 +66,4 @@ class ProductDetail < ApplicationRecord
           )
           .order('suppliers.id', 'price_details.updated_at DESC')
   end
-
 end
