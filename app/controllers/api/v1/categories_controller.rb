@@ -1,12 +1,12 @@
 class Api::V1::CategoriesController < ApplicationController
-  before_action -> { find_record(Category) }, only: %i[show destroy]
+  before_action -> { find_record(Category) }, only: %i[show destroy update]
 
   def index
     categories = Category.all
     categories = categories.search(params[:q]) if params[:q].present?
     categories = categories.reorder(sort_column => sort_direction)
     paginated = paginate(categories)
-    
+
     categories.present? ? render_collection(paginated, serializer) : :not_found
   end
 
@@ -23,7 +23,7 @@ class Api::V1::CategoriesController < ApplicationController
       name: category_params[:name],
       description: category_params[:description],
       active: category_params[:active],
-      parent_category_id: category_params[:parent_category_id]
+      parent_category_id: category_params[:parent_category_id] == 'null' ? nil : category_params[:parent_category_id]
     )
 
     if @category.save
@@ -37,6 +37,18 @@ class Api::V1::CategoriesController < ApplicationController
     render json: serialize_resource(@category, serializer), status: :ok
   end
 
+  def update
+    Category.transaction do
+      update_category_attributes(@category, category_params)
+
+      if @category.save
+        render json: serialize_resource(@category, serializer), status: :ok
+      else
+        render json: error_response(@category, 'Failed to update the product'), status: :unprocessable_entity
+      end
+    end
+  end
+
   def destroy
     @category.destroy
     head :no_content
@@ -44,7 +56,7 @@ class Api::V1::CategoriesController < ApplicationController
 
   def tree_structure
     categories_tree = Category.tree_structure
-    render json: {data:categories_tree}, status: :ok
+    render json: { data: categories_tree }, status: :ok
   end
 
   private
@@ -55,5 +67,13 @@ class Api::V1::CategoriesController < ApplicationController
 
   def category_params
     params.require(:category).permit(:name, :description, :active, :parent_category_id)
+  end
+
+  def update_category_attributes(category, params)
+    attributes_to_update = %i[name description active parent_category_id]
+
+    attributes_to_update.each do |attribute_name|
+      update_attribute(category, attribute_name, params[attribute_name])
+    end
   end
 end
