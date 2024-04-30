@@ -23,7 +23,7 @@ Rails.application.routes.draw do
       resources :countries, only: [] do
         resources :suppliers, only: [:index]
       end
-      resources :categories, only: [:index, :create, :show] do
+      resources :categories, only: [:index, :create, :show, :update] do
         collection do
           get 'tree_structure'
         end
