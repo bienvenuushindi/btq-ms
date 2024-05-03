@@ -1,4 +1,4 @@
-class Customer::IndividualOrderDetailSerializer
+class Customer::OrderDetailSerializer
   include JSONAPI::Serializer
   attributes 
 end

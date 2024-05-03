@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_04_10_193816) do
+ActiveRecord::Schema[7.0].define(version: 2024_04_30_205141) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -83,6 +83,90 @@ ActiveRecord::Schema[7.0].define(version: 2024_04_10_193816) do
     t.string "code", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "customer_cart_items", force: :cascade do |t|
+    t.bigint "customer_cart_id", null: false
+    t.bigint "product_detail_id", null: false
+    t.integer "quantity", default: 0
+    t.string "quantity_type", limit: 25
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_cart_id"], name: "index_customer_cart_items_on_customer_cart_id"
+    t.index ["product_detail_id"], name: "index_customer_cart_items_on_product_detail_id"
+  end
+
+  create_table "customer_carts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.boolean "status"
+    t.decimal "total_amount", default: "0.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_customer_carts_on_user_id"
+  end
+
+  create_table "customer_combined_orders", force: :cascade do |t|
+    t.bigint "product_detail_id", null: false
+    t.string "status", limit: 25
+    t.integer "quantity", default: 0
+    t.string "quantity_type", limit: 25
+    t.decimal "total_amount", default: "0.0"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_detail_id"], name: "index_customer_combined_orders_on_product_detail_id"
+  end
+
+  create_table "customer_individual_orders", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.decimal "total_amount", default: "0.0"
+    t.string "status", limit: 25
+    t.date "delivery_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_customer_individual_orders_on_user_id"
+  end
+
+  create_table "customer_order_details", force: :cascade do |t|
+    t.bigint "customer_individual_order_id", null: false
+    t.bigint "product_detail_id", null: false
+    t.bigint "customer_combined_order_id", null: false
+    t.integer "quantity", default: 0
+    t.string "quantity_type", limit: 25
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_combined_order_id"], name: "index_customer_order_details_on_customer_combined_order_id"
+    t.index ["customer_individual_order_id"], name: "index_customer_order_details_on_customer_individual_order_id"
+    t.index ["product_detail_id"], name: "index_customer_order_details_on_product_detail_id"
+  end
+
+  create_table "customer_payments", force: :cascade do |t|
+    t.bigint "customer_individual_order_id", null: false
+    t.decimal "amount_paid", default: "0.0"
+    t.string "method"
+    t.string "status", limit: 25
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["customer_individual_order_id"], name: "index_customer_payments_on_customer_individual_order_id"
+  end
+
+  create_table "customer_reviews", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.integer "rating", default: 0
+    t.string "comment"
+    t.bigint "product_detail_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_detail_id"], name: "index_customer_reviews_on_product_detail_id"
+    t.index ["user_id"], name: "index_customer_reviews_on_user_id"
+  end
+
+  create_table "customer_shippings", force: :cascade do |t|
+    t.bigint "customer_individual_order_id", null: false
+    t.bigint "address_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["address_id"], name: "index_customer_shippings_on_address_id"
+    t.index ["customer_individual_order_id"], name: "index_customer_shippings_on_customer_individual_order_id"
   end
 
   create_table "price_details", force: :cascade do |t|
@@ -226,6 +310,19 @@ ActiveRecord::Schema[7.0].define(version: 2024_04_10_193816) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "addresses", "countries"
   add_foreign_key "categorizations", "categories"
+  add_foreign_key "customer_cart_items", "customer_carts"
+  add_foreign_key "customer_cart_items", "product_details"
+  add_foreign_key "customer_carts", "users"
+  add_foreign_key "customer_combined_orders", "product_details"
+  add_foreign_key "customer_individual_orders", "users"
+  add_foreign_key "customer_order_details", "customer_combined_orders"
+  add_foreign_key "customer_order_details", "customer_individual_orders"
+  add_foreign_key "customer_order_details", "product_details"
+  add_foreign_key "customer_payments", "customer_individual_orders"
+  add_foreign_key "customer_reviews", "product_details"
+  add_foreign_key "customer_reviews", "users"
+  add_foreign_key "customer_shippings", "addresses"
+  add_foreign_key "customer_shippings", "customer_individual_orders"
   add_foreign_key "price_details", "product_details"
   add_foreign_key "price_details", "suppliers"
   add_foreign_key "product_details", "products"

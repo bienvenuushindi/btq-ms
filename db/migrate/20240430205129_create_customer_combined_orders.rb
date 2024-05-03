@@ -5,7 +5,7 @@ class CreateCustomerCombinedOrders < ActiveRecord::Migration[7.0]
       t.string :status, limit: 25
       t.integer :quantity, default: 0
       t.string :quantity_type, limit: 25
-      t.decimal :total_amount,  scale: 2, default: 0.0
+      t.decimal :total_amount, default: 0
 
       t.timestamps
     end

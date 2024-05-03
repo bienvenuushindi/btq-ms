@@ -1,4 +1,4 @@
-class Customer::IndividualOrderDetail < ApplicationRecord
+class Customer::OrderDetail < ApplicationRecord
   belongs_to :individual_order
   belongs_to :product_detail
   belongs_to :combined_order

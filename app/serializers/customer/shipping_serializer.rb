@@ -1,4 +1,4 @@
-class Customer::ShippingAddressSerializer
+class Customer::ShippingSerializer
   include JSONAPI::Serializer
   attributes 
 end
