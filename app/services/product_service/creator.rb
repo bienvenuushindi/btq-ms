@@ -32,7 +32,7 @@ module ProductService
 
     def add_categories
       categories = parse_category_ids(@params[:categories])
-      update_categories(@supplier, categories)
+      update_categories(@product, categories)
     end
   end
 end
