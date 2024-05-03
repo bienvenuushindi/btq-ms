@@ -12,7 +12,7 @@ module BtqMs
     config.load_defaults 7.0
 
     # config.autoloader = :zeitwerk
-    config.autoload_paths += %W(#{config.root}/app/services)
+    # config.autoload_paths += %W(#{config.root}/app/services)
     config.autoload_paths += %W(#{config.root}/app/services/**/)
 
     # Configuration for the application, engines, and railties goes here.
