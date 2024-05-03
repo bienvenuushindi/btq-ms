@@ -1,4 +1,16 @@
 # frozen_string_literal: true
+module CountryService
+  class Creator < Base::Creator
+    def initialize(params)
+      super(params)
+    end
 
-class Creator
+    private
+
+    def create_record
+      Country.find_or_create_by(code: @params[:code]) do |country|
+        country.name = @params[:name]
+      end
+    end
+  end
 end

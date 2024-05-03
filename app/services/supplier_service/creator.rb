@@ -1,51 +1,38 @@
-# frozen_string_literal: true
-# app/services/supplier/creator.rb
-module Services
-  module Supplier
-    class Creator
-      def initialize(params, current_user)
-        @params = params
-        @current_user = current_user
-      end
+module SupplierService
+  class Creator < Base::Creator
+    include CategoryHelper
 
-      def call
-        create_supplier
-      end
+    def initialize(params, user)
+      @current_user = user
+      super(params)
+    end
 
-      private
+    private
 
-      def create_supplier
-        @supplier = Supplier.new(supplier_params)
-        @supplier.user = @current_user
-        @supplier.tag_list = @params[:tags] unless @params[:tags].blank?
-        if @supplier.save
-          create_country_and_address
-          @supplier
-        else
-          handle_error
-        end
-      end
+    def create_record
+      @supplier = build_supplier_with_tags
+      @supplier.save!
+      create_country_and_address
+      add_categories
 
-      def create_country_and_address
-        country = Country.create_with(name: @params[:country_name]).find_or_create_by(code: @params[:country_id])
-        Address.create!(
-          line1: @params[:address1],
-          city: @params[:city],
-          country: country,
-          phone_number1: @params[:tel1],
-          phone_number2: @params[:tel2],
-          line2: @params[:address2],
-          addressable: @supplier
-        )
-      end
+      @supplier
+    end
 
-      def handle_error
-        # Handle error logic, e.g., logging or raising specific exceptions
+    def build_supplier_with_tags
+      Supplier.new(shop_name: @params[:shop_name], images: @params[:images], user: @current_user).tap do |supplier|
+        supplier.tag_list = @params[:tags] unless @params[:tags].blank?
       end
+    end
 
-      def supplier_params
-        @params.require(:supplier).permit(:shop_name, :address1, :address2, :city, :tel1, :country_name, :tel2, :country_id, :tags, :categories, images: [])
-      end
+    def create_country_and_address
+      country_params = { code: @params[:country_id], name: @params[:country_name] }
+      country = CountryService::Creator.new(country_params).call
+      AddressService::Creator.new(@params, @supplier, country).call
+    end
+
+    def add_categories
+      categories = parse_category_ids(@params[:categories])
+      update_categories(@supplier, categories)
     end
   end
 end
