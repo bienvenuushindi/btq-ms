@@ -9,6 +9,7 @@ The Boutique Purchase Requisition project is a comprehensive solution designed t
 ![Screenshot from 2024-05-04 03-39-23](https://github.com/bienvenuushindi/btq-ms-front/assets/26736582/7587a168-0be0-4717-a564-ed23f0c4ef9d)
 ![Screenshot from 2024-05-04 03-39-47](https://github.com/bienvenuushindi/btq-ms-front/assets/26736582/36f847d9-4a45-4d7c-804a-2d5f88cf649a)
 ![Screenshot from 2024-05-04 03-39-55](https://github.com/bienvenuushindi/btq-ms-front/assets/26736582/fad4d7f0-7127-4619-8ed4-8b588a364974)
+![Screenshot 2024-05-04 at 04-38-48 Create Next App](https://github.com/bienvenuushindi/btq-ms-front/assets/26736582/42fc50ea-56b1-488f-8042-f6ad7bd06308)
 ![Screenshot from 2024-05-04 03-40-00](https://github.com/bienvenuushindi/btq-ms-front/assets/26736582/ee1c2d93-3fa1-442d-84a3-60f02714bd33)
 ![Screenshot from 2024-05-04 03-40-07](https://github.com/bienvenuushindi/btq-ms-front/assets/26736582/7638c7e1-f03b-4f92-b821-7c0a804f385e)
 ![Screenshot from 2024-05-04 03-40-14](https://github.com/bienvenuushindi/btq-ms-front/assets/26736582/6ea30cc8-4908-4549-a4e1-f9108b963846)
