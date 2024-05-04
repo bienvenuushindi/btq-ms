@@ -3,7 +3,13 @@ class Api::V1::ProductsController < ApplicationController
   before_action -> { find_record(Product) }, only: %i[show update]
 
   def index
-    render_collection(paginated_products, serializer)
+    products = ProductService::Retriever.call(Product.all, params)
+    render_collection(paginate(products), serializer)
+  end
+
+  def search
+    products = ProductService::Searcher.call(Product.all, params)
+    render_collection(paginate(products), serializer, search_options)
   end
 
   def count_by_status
@@ -16,12 +22,13 @@ class Api::V1::ProductsController < ApplicationController
     } }, status: :ok
   end
 
-  def search
-    render_collection(paginated_search_results, serializer, search_options)
-  end
-
   def create
-    create_product
+    @product = ProductService::Creator.call(product_params, current_user)
+    if @product.persisted?
+      render json: serialize_resource(@product, serializer), status: :created
+    else
+      render json: error_response(@product), status: :unprocessable_entity
+    end
   end
 
   def show
@@ -41,38 +48,6 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   private
-
-  def paginated_search_results
-    return unless params[:q].present?
-
-    products = Product.all.search(params[:q])
-    products = products.order(created_at: :desc)
-    paginated = paginate(products)
-
-    paginated.present? ? paginated : { error: 'No products found' }
-  end
-
-  def search_options
-    { fields: { product: %i[name details] } }
-  end
-
-  def sort_column
-    %w[name active created_at country_origin].include?(params[:sort]) ? params[:sort] : 'created_at'
-  end
-
-  def sort_direction
-    %w[asc desc].include?(params[:direction]) ? params[:direction] : 'desc'
-  end
-
-  def paginated_products
-    products = Product.all
-    products = products.search(params[:q]) if params[:q].present?
-    products = products.by_status(params[:status]) if params[:status].present?
-    products = products.reorder(sort_column => sort_direction)
-    products = products.with_attached_images.order(created_at: :desc)
-    paginate(products)
-  end
-
   def update_product_attributes(product, params)
     attributes_to_update = %i[name short_description description active country_origin tags images categories]
 
@@ -86,17 +61,12 @@ class Api::V1::ProductsController < ApplicationController
     end
   end
 
-  def serializer
-    ProductSerializer
+  def search_options
+    { fields: { product: %i[name details] } }
   end
 
-  def create_product
-    @product = ProductService::Creator.call(product_params, current_user)
-    if @product.persisted?
-      render json: serialize_resource(@product, serializer), status: :created
-    else
-      render json: error_response(@product), status: :unprocessable_entity
-    end
+  def serializer
+    ProductSerializer
   end
 
   def product_params

@@ -3,17 +3,22 @@ class Api::V1::SuppliersController < ApplicationController
   before_action -> { find_record(Supplier) }, only: %i[show update]
 
   def index
-    render_collection(paginated_suppliers, serializer, index_options)
-  end
-
-  def search
-    render_collection(paginated_search_results, serializer, search_options)
+    suppliers = SupplierService::Retriever.call(Supplier.all, params)
+    render_collection(paginate(suppliers), serializer, index_options)
   end
 
   def create
-    create_supplier
+    @supplier = SupplierService::Creator.call(supplier_params, current_user)
+    if @supplier.persisted?
+      render json: serialize_resource(@supplier, serializer), status: :created
+    else
+      render json: error_response(@supplier), status: :unprocessable_entity
+    end
   end
-
+  def search
+    suppliers = SupplierService::Searcher.call(Supplier.all, params)
+    render_collection(paginate(suppliers), serializer, search_options)
+  end
   def show
     render json: serialize_resource(@supplier, serializer), status: :ok
   end
@@ -24,44 +29,6 @@ class Api::V1::SuppliersController < ApplicationController
 
   private
 
-  def paginated_suppliers
-    suppliers = Supplier.all
-    suppliers = suppliers.search(params[:q]) if params[:q].present?
-    suppliers = suppliers.reorder(sort_column => sort_direction)
-    suppliers = suppliers.with_attached_images.order(created_at: :desc)
-    paginate(suppliers)
-  end
-
-  def sort_column
-    %w[shop_name created_at].include?(params[:sort]) ? params[:sort] : "created_at"
-  end
-
-  def sort_direction
-    %w[asc desc].include?(params[:direction]) ? params[:direction] : "desc"
-  end
-
-  def paginated_search_results
-    return unless params[:q].present?
-
-    suppliers = Supplier.all.search(params[:q]).limit(4)
-    filter_suppliers_by_product_detail(suppliers) if params[:product_detail_id].present?
-    suppliers = suppliers.order(created_at: :desc)
-    paginate(suppliers)
-  end
-
-  def filter_suppliers_by_product_detail(suppliers)
-    prod_supplier_ids = ProductDetail.find_by(id: params[:product_detail_id]).suppliers.pluck(:id)
-    suppliers.where.not(id: prod_supplier_ids)
-  end
-
-  def create_supplier
-    @supplier = SupplierService::Creator.call(supplier_params, current_user)
-    if @supplier.persisted?
-      render json: serialize_resource(@supplier, serializer), status: :created
-    else
-      render json: error_response(@supplier), status: :unprocessable_entity
-    end
-  end
 
   def update_supplier
     update_supplier_attributes(@supplier, supplier_params)
