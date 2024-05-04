@@ -13,8 +13,6 @@ module Base
       nil
     end
 
-    protected
-
     def create_record
       raise NotImplementedError, "#{self.class} has not implemented method '#{__method__}'"
     end

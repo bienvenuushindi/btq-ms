@@ -26,8 +26,8 @@ module SupplierService
 
     def create_country_and_address
       country_params = { code: @params[:country_id], name: @params[:country_name] }
-      country = CountryService::Creator.new(country_params).call
-      AddressService::Creator.new(@params, @supplier, country).call
+      country = CountryService::Creator.call(country_params)
+      AddressService::Creator.call(@params, @supplier, country)
     end
 
     def add_categories
