@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 module CountryService
-class Searcher
+class Searcher < Base::Searcher
 end
 end

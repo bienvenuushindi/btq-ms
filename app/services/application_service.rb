@@ -3,6 +3,7 @@ class ApplicationService
     # Default implementation does nothing, can be overridden in subclasses
   end
   def self.call(*args)
+    # binding.pry
     new(*args).call
   end
 

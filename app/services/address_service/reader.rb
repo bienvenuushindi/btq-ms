@@ -1,5 +1,4 @@
-# frozen_string_literal: true
 module AddressService
-class Reader
-end
+  class Reader < Base::Reader
+  end
 end

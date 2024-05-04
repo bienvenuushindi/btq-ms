@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 module AddressService
-class Remover
-end
+  class Remover < Base::Remover
+  end
 end

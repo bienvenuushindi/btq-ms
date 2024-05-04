@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 module Base
-class Remover
+class Remover < ApplicationService
 end
 end
