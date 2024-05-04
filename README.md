@@ -52,14 +52,6 @@ The primary objective of the Boutique Purchase Requisition application is to add
 - Manages product information to ensure accuracy and integration with requisitions.
 - Maintains supplier details, simplifying supplier selection and interaction.
 
-## Getting Started
-
-To get started with the Boutique Purchase Requisition project, follow these steps:
-
-1. Clone the repository.
-2. Install dependencies using `npm install` or `yarn install`.
-3. Configure the environment variables.
-4. Run the application using `npm start` or `yarn start`.
 
 ## Contributing
 
