@@ -13,13 +13,8 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   def count_by_status
-    active_count = Product.count_by_status(true)
-    inactive_count = Product.count_by_status(false)
-
-    render json: { data: {
-      active: active_count,
-      inactive: inactive_count
-    } }, status: :ok
+    counts = ProductService::StatusCounter.call
+    render json: { data: counts }, status: :ok
   end
 
   def create
