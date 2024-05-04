@@ -55,7 +55,7 @@ class Api::V1::SuppliersController < ApplicationController
   end
 
   def create_supplier
-    @supplier = SupplierService::Creator.new(supplier_params, current_user).call
+    @supplier = SupplierService::Creator.call(supplier_params, current_user)
     if @supplier.persisted?
       render json: serialize_resource(@supplier, serializer), status: :created
     else

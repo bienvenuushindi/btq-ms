@@ -1,4 +1,5 @@
 # frozen_string_literal: true
-
-class Reader
+module Base
+  class Reader
+  end
 end

@@ -91,7 +91,7 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   def create_product
-    @product = ProductService::Creator.new(product_params, current_user).call
+    @product = ProductService::Creator.call(product_params, current_user)
     if @product.persisted?
       render json: serialize_resource(@product, serializer), status: :created
     else
