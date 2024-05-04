@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module Base
+module BaseService
   class Creator < ApplicationService
 
     def initialize(params)

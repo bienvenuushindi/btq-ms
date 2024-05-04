@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module Base
+module BaseService
   class Retriever < ApplicationService
     attr_accessor :sort_column
 

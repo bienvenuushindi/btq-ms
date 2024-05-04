@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module Base
+module BaseService
   class Searcher < ApplicationService
     def initialize(scope, search_params)
       @scope = scope
