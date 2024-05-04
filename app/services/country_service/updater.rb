@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 module CountryService
-class Updater < Base::Updater
+class Updater < BaseService::Updater
 end
 end

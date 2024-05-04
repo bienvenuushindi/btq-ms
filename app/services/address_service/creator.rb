@@ -1,5 +1,5 @@
 module AddressService
-  class Creator < Base::Creator
+  class Creator < BaseService::Creator
     def initialize(params, record, country)
       @record = record
       @country = country

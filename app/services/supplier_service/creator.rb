@@ -1,5 +1,5 @@
 module SupplierService
-  class Creator < Base::Creator
+  class Creator < BaseService::Creator
     include CategoryHelper
 
     def initialize(params, user)

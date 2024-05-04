@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 module CountryService
-  class Creator < Base::Creator
+  class Creator < BaseService::Creator
     def initialize(params)
       super(params)
     end

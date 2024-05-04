@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 module CountryService
-class Retriever < Base::Retriever
+class Retriever < BaseService::Retriever
 end
 end

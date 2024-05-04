@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 module SupplierService
-class Retriever < Base::Retriever
+class Retriever < BaseService::Retriever
   def initialize(scope, filter_params)
     @sort_column = %w[shop_name created_at]
     super(scope, filter_params)

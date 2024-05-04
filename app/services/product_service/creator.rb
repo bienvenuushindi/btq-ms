@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 module ProductService
-  class Creator < Base::Creator
+  class Creator < BaseService::Creator
     include CategoryHelper
 
     def initialize(params, user)

@@ -1,6 +1,6 @@
 class Api::V1::SuppliersController < ApplicationController
   include CategoryHelper
-  before_action -> { find_record(Supplier) }, only: %i[show update]
+  before_action :find_supplier, only: %i[show update]
 
   def index
     suppliers = SupplierService::Retriever.call(Supplier.all, params)
@@ -46,6 +46,10 @@ class Api::V1::SuppliersController < ApplicationController
     update_attribute(supplier, :address, params)
     categories = parse_category_ids(params[:categories])
     update_categories(supplier, categories)
+  end
+
+  def find_supplier
+    @supplier = SupplierService::Reader.call(params[:id])
   end
 
   def index_options

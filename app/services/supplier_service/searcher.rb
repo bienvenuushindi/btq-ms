@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 module SupplierService
-class Searcher < Base::Searcher
+class Searcher < BaseService::Searcher
 
   def initialize(scope, search_params)
     super(scope, search_params)

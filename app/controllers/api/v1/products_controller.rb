@@ -1,6 +1,6 @@
 class Api::V1::ProductsController < ApplicationController
   include CategoryHelper
-  before_action -> { find_record(Product) }, only: %i[show update]
+  before_action :find_product, only: %i[show update]
 
   def index
     products = ProductService::Retriever.call(Product.all, params)
@@ -27,8 +27,7 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   def show
-    options = { include: ['product_details'] }
-    render json: serialize_resource(@product, serializer, options), status: :ok
+    render json: serialize_resource(@product, serializer), status: :ok
   end
 
   def update
@@ -54,6 +53,10 @@ class Api::V1::ProductsController < ApplicationController
         update_attribute(product, attribute_name, params[attribute_name])
       end
     end
+  end
+
+  def find_product
+    @product = ProductService::Reader.call(params[:id])
   end
 
   def search_options
