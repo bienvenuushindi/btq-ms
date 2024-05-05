@@ -4,7 +4,7 @@ class Api::V1::SuppliersController < ApplicationController
 
   def index
     suppliers = SupplierService::Retriever.call(Supplier.all, params)
-    render_collection(paginate(suppliers), serializer, index_options)
+    render_collection(paginate(suppliers), serializer, SupplierService::Options.index)
   end
 
   def create
@@ -17,7 +17,7 @@ class Api::V1::SuppliersController < ApplicationController
   end
   def search
     suppliers = SupplierService::Searcher.call(Supplier.all, params)
-    render_collection(paginate(suppliers), serializer, search_options)
+    render_collection(paginate(suppliers), serializer, SupplierService::Options.search)
   end
   def show
     render json: serialize_resource(@supplier, serializer), status: :ok
@@ -34,14 +34,6 @@ class Api::V1::SuppliersController < ApplicationController
   private
   def find_supplier
     @supplier = SupplierService::Reader.call(params[:id])
-  end
-
-  def index_options
-    { fields: { supplier: [:id, :shop_name, :image_urls, :address] } }
-  end
-
-  def search_options
-    { fields: { supplier: [:id, :shop_name, :image_urls, :address, :categories] } }
   end
 
   def serializer
