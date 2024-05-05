@@ -16,8 +16,8 @@ module CategoryHelper
     end
 
     def update_categories(resource, category_ids)
-      current_category_ids = resource.category_ids
-      new_category_ids = category_ids.map(&:to_i)
+      current_category_ids = resource.category_ids.uniq
+      new_category_ids = category_ids.map(&:to_i).uniq
 
       categories_to_add = new_category_ids - current_category_ids
       categories_to_remove = current_category_ids - new_category_ids
@@ -28,6 +28,11 @@ module CategoryHelper
 
       # Remove existing categories not included in the new list
       resource.categorizations.where(category_id: categories_to_remove).destroy_all if categories_to_remove.any?
+    end
+
+    def add_categories(resource, params)
+      categories = parse_category_ids(params[:categories])
+      update_categories(resource, categories)
     end
   end
 end

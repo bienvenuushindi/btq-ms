@@ -13,7 +13,7 @@ module SupplierService
       @supplier = build_supplier_with_tags
       @supplier.save!
       create_country_and_address
-      add_categories
+      add_categories(@supplier, @params)
 
       @supplier
     end
@@ -28,11 +28,6 @@ module SupplierService
       country_params = { code: @params[:country_id], name: @params[:country_name] }
       country = CountryService::Creator.call(country_params)
       AddressService::Creator.call(@params, @supplier, country)
-    end
-
-    def add_categories
-      categories = parse_category_ids(@params[:categories])
-      update_categories(@supplier, categories)
     end
   end
 end

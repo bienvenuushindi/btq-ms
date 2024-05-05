@@ -3,13 +3,13 @@ class Api::V1::ProductsController < ApplicationController
   before_action :find_product, only: %i[show update]
 
   def index
-    products = ProductService::Retriever.call(Product.all, params)
-    render_collection(paginate(products), serializer)
+    @products = ProductService::Retriever.call(Product.all, params)
+    render_collection(paginate(@products), serializer)
   end
 
   def search
-    products = ProductService::Searcher.call(Product.all, params)
-    render_collection(paginate(products), serializer, search_options)
+    @products = ProductService::Searcher.call(Product.all, params)
+    render_collection(paginate(@products), serializer, search_options)
   end
 
   def count_by_status
@@ -31,29 +31,14 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   def update
-    Product.transaction do
-      update_product_attributes(@product, product_params)
-      if @product.save
-        render json: serialize_resource(@product, serializer), status: :ok
-      else
-        render json: error_response(@product, 'Failed to update the product'), status: :unprocessable_entity
-      end
+    if ProductService::Updater.call(@product, product_params)
+      render json: serialize_resource(@product, serializer), status: :ok
+    else
+      render json: error_response(@product, 'Failed to update the product'), status: :unprocessable_entity
     end
   end
 
   private
-  def update_product_attributes(product, params)
-    attributes_to_update = %i[name short_description description active country_origin tags images categories]
-
-    attributes_to_update.each do |attribute_name|
-      if attribute_name.to_sym == :categories && params[attribute_name].present?
-        categories = parse_category_ids(params[attribute_name])
-        update_categories(product, categories)
-      else
-        update_attribute(product, attribute_name, params[attribute_name])
-      end
-    end
-  end
 
   def find_product
     @product = ProductService::Reader.call(params[:id])

@@ -24,30 +24,14 @@ class Api::V1::SuppliersController < ApplicationController
   end
 
   def update
-    update_supplier
-  end
-
-  private
-
-
-  def update_supplier
-    update_supplier_attributes(@supplier, supplier_params)
-    if @supplier.save
+    if SupplierService::Updater.call(@supplier, supplier_params)
       render json: serialize_resource(@supplier, serializer), status: :ok
     else
       render json: error_response(@supplier), status: :unprocessable_entity
     end
   end
 
-  def update_supplier_attributes(supplier, params)
-    update_attribute(supplier, :shop_name, params[:shop_name])
-    update_attribute(supplier, :tags, params[:tags])
-    update_attribute(supplier, :images, params[:images])
-    update_attribute(supplier, :address, params)
-    categories = parse_category_ids(params[:categories])
-    update_categories(supplier, categories)
-  end
-
+  private
   def find_supplier
     @supplier = SupplierService::Reader.call(params[:id])
   end
