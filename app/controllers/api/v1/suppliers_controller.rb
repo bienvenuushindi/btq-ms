@@ -1,5 +1,4 @@
 class Api::V1::SuppliersController < ApplicationController
-  include CategoryHelper
   before_action :find_supplier, only: %i[show update]
 
   def index
@@ -15,10 +14,12 @@ class Api::V1::SuppliersController < ApplicationController
       render json: error_response(@supplier), status: :unprocessable_entity
     end
   end
+
   def search
     suppliers = SupplierService::Searcher.call(Supplier.all, params)
     render_collection(paginate(suppliers), serializer, SupplierService::Options.search)
   end
+
   def show
     render json: serialize_resource(@supplier, serializer), status: :ok
   end
@@ -32,6 +33,7 @@ class Api::V1::SuppliersController < ApplicationController
   end
 
   private
+
   def find_supplier
     @supplier = SupplierService::Reader.call(params[:id])
   end
@@ -41,6 +43,6 @@ class Api::V1::SuppliersController < ApplicationController
   end
 
   def supplier_params
-    params.require(:supplier).permit(:shop_name, :address1, :address2, :city, :tel1, :country_name, :tel2, :country_id, :tags, :categories, images: [])
+    SupplierService::Params.supplier_params(params)
   end
 end

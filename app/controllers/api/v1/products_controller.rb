@@ -1,5 +1,4 @@
 class Api::V1::ProductsController < ApplicationController
-  include CategoryHelper
   before_action :find_product, only: %i[show update]
 
   def index
@@ -49,6 +48,6 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   def product_params
-    params.require(:product).permit(:name, :short_description, :description, :active, :country_origin, :tags, :categories, images: [])
+    ProductService::Params.product_params(params)
   end
 end
