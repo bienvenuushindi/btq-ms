@@ -18,11 +18,7 @@ class Api::V1::ProductsController < ApplicationController
 
   def create
     @product = ProductService::Creator.call(product_params, current_user)
-    if @product.persisted?
-      render json: serialize_resource(@product, serializer), status: :created
-    else
-      render json: error_response(@product), status: :unprocessable_entity
-    end
+    render_serialized_resource(@product, serializer, :created )
   end
 
   def show

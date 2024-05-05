@@ -14,6 +14,14 @@ class ApplicationController < ActionController::API
     render json: { error: 'Route not found' }, status: :not_found
   end
 
+  def render_serialized_resource(resource, serializer, status)
+    if resource.persisted?
+      render json: serialize_resource(resource, serializer), status: status
+    else
+      render json: error_response(resource), status: :unprocessable_entity
+    end
+  end
+
   protected
 
   def configure_permitted_parameters

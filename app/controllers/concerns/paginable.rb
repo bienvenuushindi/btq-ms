@@ -23,6 +23,7 @@ module Paginable
     links: paginated.links.to_h
   }
 
+
   # Merge custom_fields with attributes and pagination_options
   result = attributes.merge(pagination_options).merge(custom_fields)
 

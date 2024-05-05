@@ -8,11 +8,7 @@ class Api::V1::SuppliersController < ApplicationController
 
   def create
     @supplier = SupplierService::Creator.call(supplier_params, current_user)
-    if @supplier.persisted?
-      render json: serialize_resource(@supplier, serializer), status: :created
-    else
-      render json: error_response(@supplier), status: :unprocessable_entity
-    end
+    render_serialized_resource(@supplier, serializer, :created)
   end
 
   def search
