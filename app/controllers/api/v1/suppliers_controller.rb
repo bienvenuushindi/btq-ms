@@ -2,8 +2,8 @@ class Api::V1::SuppliersController < ApplicationController
   before_action :find_supplier, only: %i[show update]
 
   def index
-    suppliers = SupplierService::Retriever.call(Supplier.all, params)
-    render_collection(paginate(suppliers), serializer, SupplierService::Options.index)
+    @suppliers = SupplierService::Retriever.call(Supplier.all, params)
+    render_collection(paginate(@suppliers), serializer, SupplierService::Options.index)
   end
 
   def create
@@ -16,8 +16,8 @@ class Api::V1::SuppliersController < ApplicationController
   end
 
   def search
-    suppliers = SupplierService::Searcher.call(Supplier.all, params)
-    render_collection(paginate(suppliers), serializer, SupplierService::Options.search)
+    @suppliers = SupplierService::Searcher.call(Supplier.all, params)
+    render_collection(paginate(@suppliers), serializer, SupplierService::Options.search)
   end
 
   def show
