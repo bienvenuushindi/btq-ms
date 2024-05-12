@@ -8,9 +8,9 @@ class ProductSerializer < Serializer
   attribute :tags do |object|
     object.tags.map { |tag| tag['name'] }
   end
-  attribute :categories do |object|
-    object.categories.select("name")
- end
+attribute :categories do |object|
+  object.categories.select("categories.id, categories.name")
+end
   attribute :created_at do |object|
     object.created_at.strftime("%B %-d, %Y")
   end

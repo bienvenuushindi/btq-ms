@@ -12,6 +12,10 @@ class SupplierSerializer < Serializer
       tel2: object.address.phone_number2
     }
   end
+  
+  attribute :categories do |object|
+  object.categories.select("categories.id, categories.name")
+  end
 
   attribute :tags do |object|
     object.tags.map { |tag| tag['name'] }

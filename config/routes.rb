@@ -65,6 +65,18 @@ Rails.application.routes.draw do
       get 'quantity_types', to: 'requisition_products#quantity_types'
       get 'currencies', to: 'requisition_products#currencies'
       get 'check_auth', to: 'authentication#check_auth'
+
+      namespace :customers do
+        resources :carts
+        resources :cart_items
+        resources :combined_orders
+        resources :individual_orders
+        resources :individual_order_details
+        resources :payments
+        resources :reviews
+        resources :shipping_addresses
+        resources :products
+      end
     end
   end
 

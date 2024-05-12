@@ -1,14 +1,13 @@
 class ApplicationController < ActionController::API
-  # include Pagy::Backend
   include Paginable
   include UtilitiesHelper
   include JsonResponseHelper
   include ParameterMissingHandling
   include CustomSerializer
+  include ErrorHandler
+
   before_action :authenticate_user!
   before_action :configure_permitted_parameters, if: :devise_controller?
-  rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
-  rescue_from ActiveRecord::RecordInvalid, with: :record_invalid
   respond_to :json
 
   def routing_error
@@ -25,18 +24,6 @@ class ApplicationController < ActionController::API
   def find_record(model_class)
     record = model_class.find(params[:id])
     instance_variable_set("@#{model_class.name.downcase}", record)
-  end
-
-  def record_not_found(exception)
-    model_name = exception.model.constantize.model_name.human
-    render json: { "#{model_name}": nil}, status: :not_found
-  end
-
-  private
-
-  def record_invalid(exception)
-    message = exception.message.partition('Validation failed: ').last
-    render json: { meta: { message: message } }, status: 401
   end
 
 end

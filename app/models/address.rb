@@ -5,4 +5,5 @@ class Address < ApplicationRecord
   validates :city, presence: true
   validates :phone_number1, presence: true
   scope :supplier_addresses, -> { where(addressable_type: 'Supplier') }
+  scope :shipping_address, -> { where(addressable_type: 'Customer::Shipping') }
 end

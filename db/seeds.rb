@@ -3,5 +3,5 @@
 #
 # Examples:
 #
-  role = Role.create([{ name: "admin" }, { name: "supplier" }])
+  role = Role.create([{ name: "admin" }, { name: "supplier_service" }])
 #   Character.create(name: "Luke", movie: movies.first)

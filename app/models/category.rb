@@ -2,8 +2,8 @@ class Category < ApplicationRecord
   include PgSearch::Model
   pg_search_scope :search, against: %i[name description], using: { tsearch: { prefix: true } }
   has_many :categorizations
-  has_many :suppliers, through: :categorizations
-  has_many :products, through: :categorizations
+  has_many :suppliers, through: :categorizations, source: :categorizable, source_type: 'Supplier'
+  has_many :products, through: :categorizations, source: :categorizable, source_type: 'Product'
   belongs_to :parent_category, class_name: 'Category', optional: true
   has_many :children, class_name: 'Category', foreign_key: 'parent_category_id'
 
