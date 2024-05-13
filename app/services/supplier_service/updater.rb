@@ -7,6 +7,10 @@ module SupplierService
       super(resource, params)
     end
 
+    def call
+      update_resource
+    end
+
     private
 
     def update_attributes

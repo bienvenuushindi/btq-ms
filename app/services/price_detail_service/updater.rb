@@ -1,9 +1,13 @@
 # frozen_string_literal: true
-module CategoryService
+module PriceDetailService
   class Updater < BaseService::Updater
 
     def initialize(resource, params)
       super(resource, params)
+    end
+
+    def call
+      update_resource
     end
 
     private

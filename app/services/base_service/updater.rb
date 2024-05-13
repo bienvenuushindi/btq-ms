@@ -8,10 +8,6 @@ module BaseService
       @params = params
     end
 
-    def call
-      update_resource
-    end
-
     protected
 
     def update_resource
