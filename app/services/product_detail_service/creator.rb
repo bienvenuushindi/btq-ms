@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module CategoryService
+module ProductDetailService
   class Creator < BaseService::Creator
     def initialize(params)
       super(params)
@@ -8,21 +8,25 @@ module CategoryService
     private
 
     def create_record
-      @category = build_category
-      @category.save!
-
-      @category
+      @product_detail = build_product_details
+      @product_detail.save!
+      @product_detail
     end
-    
+
     private
-    
-    def build_category
-      Category.new(
-        name: @params[:name],
-        description: @params[:description],
-        active: @params[:active],
-        parent_category_id: @params[:parent_category_id]&.presence
-      )
+
+    def build_product_details
+      ProductDetail.new(size: @params[:size],
+                        expired_date: @params[:expired_date],
+                        unit_price: @params[:unit_price],
+                        dozen_price: @params[:dozen_price],
+                        box_price: @params[:box_price],
+                        dozen_units: @params[:dozen_units],
+                        box_units: @params[:box_units],
+                        product: ProductService::Reader.call(@params[:product_id]),
+                        status: @params[:status],
+                        images: @params[:images]
+      ).tap { |product_detail| product_detail.tag_list = @params[:tags] unless @params[:tags].blank? }
     end
   end
 end

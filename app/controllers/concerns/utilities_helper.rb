@@ -10,7 +10,7 @@ module UtilitiesHelper
     when :address
       update_address(model_instance, new_value)
     else
-      model_instance.update(attribute_name => new_value)
+      model_instance.update!(attribute_name => new_value)
     end
   end
   private

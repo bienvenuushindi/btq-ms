@@ -27,11 +27,11 @@ class ProductDetail < ApplicationRecord
   end
 
   def self.last_soon_expired(limit=5)
-    sc_expired_soon.limit(limit)
+    details_with_product_name.sc_expired_soon.limit(limit)
   end
 
   def self.last_expired(limit=5)
-    sc_expired.limit(limit)
+    details_with_product_name.sc_expired.limit(limit)
   end
   def self.count_expired
     sc_expired.count

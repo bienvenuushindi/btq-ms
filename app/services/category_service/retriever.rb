@@ -5,5 +5,10 @@ module CategoryService
       @sort_column = %w[name active created_at count_products]
       super(scope, filter_params)
     end
+
+    def call
+      apply_filters
+      apply_sorting
+    end
   end
 end

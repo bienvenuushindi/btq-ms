@@ -3,7 +3,7 @@ class Api::V1::RequisitionsController < ApplicationController
   before_action :set_requisition, only: %i[update_products_list add_products remove_item]
 
   def index
-    options = { fields: { requisition: %i[total_price count_products count_products_bought price_currency archived date] } }
+    options = { fields: { requisition: %i[id total_price count_products count_products_bought price_currency archived date] } }
     requisitions = Requisition.all
     requisitions = requisitions.search(params[:q]) if params[:q].present?
     requisitions = requisitions.order(created_at: :desc)

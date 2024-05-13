@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module CategoryService
+module PriceDetailService
   class Creator < BaseService::Creator
     def initialize(params)
       super(params)
@@ -8,21 +8,9 @@ module CategoryService
     private
 
     def create_record
-      @category = build_category
-      @category.save!
+      prices_hash = @params[:prices].to_h
+      PriceDetail.custom_upsert(prices_hash, @params[:currency], @params[:supplier_id], @params[:product_detail_id])
+    end
 
-      @category
-    end
-    
-    private
-    
-    def build_category
-      Category.new(
-        name: @params[:name],
-        description: @params[:description],
-        active: @params[:active],
-        parent_category_id: @params[:parent_category_id]&.presence
-      )
-    end
   end
 end

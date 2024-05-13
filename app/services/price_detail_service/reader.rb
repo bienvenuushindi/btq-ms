@@ -1,8 +1,8 @@
 # frozen_string_literal: true
-module CategoryService
+module PriceDetailService
   class Reader < BaseService::Reader
     def initialize(resource_id)
-      super(Category, resource_id)
+      super(PriceDetail, resource_id)
     end
   end
 end

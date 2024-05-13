@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 module ProductService
   module Helper
-    def self.search
+    def self.search_options
       { fields: { product: %i[name details] } }
     end
 

@@ -8,7 +8,7 @@ class Api::V1::ProductsController < ApplicationController
 
   def search
     @products = ProductService::Searcher.call(Product.all, params)
-    render_collection(paginate(@products), serializer, ProductService::Options.search)
+    render_collection(paginate(@products), serializer, ProductService::Helper.search_options)
   end
 
   def count_by_status
@@ -44,6 +44,6 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   def product_params
-    ProductService::Params.product_params(params)
+    ProductService::Helper.product_params(params)
   end
 end

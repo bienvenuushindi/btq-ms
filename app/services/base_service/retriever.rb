@@ -9,11 +9,6 @@ module BaseService
       @sort_direction = %w[asc desc]
     end
 
-    def call
-      apply_filters
-      apply_sorting
-    end
-
     private
 
     def apply_filters

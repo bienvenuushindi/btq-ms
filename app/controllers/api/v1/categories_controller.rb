@@ -40,7 +40,7 @@ class Api::V1::CategoriesController < ApplicationController
   end
 
   def category_params
-    CategoryService::Params.product_params(params)
+    CategoryService::Helper.product_params(params)
   end
 
   def find_category

@@ -20,7 +20,7 @@ module ProductDetailService
     end
 
     def attributes_to_update
-      %i[name description active parent_category_id]
+      %i[size expired_date unit_price dozen_price box_price box_units dozen_units currency status images tags]
     end
   end
 end

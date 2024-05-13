@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 module SupplierService
   module Helper
-    def self.index
+    def self.index_options
       { fields: { supplier: [:id, :shop_name, :image_urls, :address] } }
     end
 
-    def self.search
+    def self.search_options
       { fields: { supplier: [:id, :shop_name, :image_urls, :address, :categories] } }
     end
 

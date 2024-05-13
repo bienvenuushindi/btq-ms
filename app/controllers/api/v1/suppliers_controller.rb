@@ -3,7 +3,7 @@ class Api::V1::SuppliersController < ApplicationController
 
   def index
     @suppliers = SupplierService::Retriever.call(Supplier.all, params)
-    render_collection(paginate(@suppliers), serializer, SupplierService::Options.index)
+    render_collection(paginate(@suppliers), serializer, SupplierService::Helper.index_options)
   end
 
   def create
@@ -13,7 +13,7 @@ class Api::V1::SuppliersController < ApplicationController
 
   def search
     @suppliers = SupplierService::Searcher.call(Supplier.all, params)
-    render_collection(paginate(@suppliers), serializer, SupplierService::Options.search)
+    render_collection(paginate(@suppliers), serializer, SupplierService::Helper.search_options)
   end
 
   def show
@@ -39,6 +39,6 @@ class Api::V1::SuppliersController < ApplicationController
   end
 
   def supplier_params
-    SupplierService::Params.supplier_params(params)
+    SupplierService::Helper.supplier_params(params)
   end
 end
