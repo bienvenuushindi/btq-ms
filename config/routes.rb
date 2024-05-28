@@ -26,6 +26,7 @@ Rails.application.routes.draw do
       resources :categories, only: [:index, :create, :show, :update] do
         collection do
           get 'tree_structure'
+          get 'parents'
         end
       end
       resources :products, only: [] do
@@ -71,10 +72,11 @@ Rails.application.routes.draw do
         resources :cart_items
         resources :combined_orders
         resources :individual_orders
-        resources :individual_order_details
+        resources :order_details
         resources :payments
+        resources :preferences
         resources :reviews
-        resources :shipping_addresses
+        resources :shippings
         resources :products
       end
     end

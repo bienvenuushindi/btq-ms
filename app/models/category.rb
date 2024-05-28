@@ -6,10 +6,14 @@ class Category < ApplicationRecord
   has_many :products, through: :categorizations, source: :categorizable, source_type: 'Product'
   belongs_to :parent_category, class_name: 'Category', optional: true
   has_many :children, class_name: 'Category', foreign_key: 'parent_category_id'
+  has_many :customer_preferences, :class_name => 'Customer::Preference'
+  has_many :users, through: :customer_preferences
 
   # Add these attributes for JSON API serialization
   attribute :name
   attribute :children
+
+  scope :parent_categories, -> { where(parent_category_id: nil) }
 
   validates :name, presence: true, uniqueness: true
   validates :description, presence: true

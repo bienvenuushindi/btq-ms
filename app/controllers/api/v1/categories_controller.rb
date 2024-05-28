@@ -33,6 +33,10 @@ class Api::V1::CategoriesController < ApplicationController
     render json: { data: categories_tree }, status: :ok
   end
 
+  def parents
+    render json: {data: serialize_resources(Category.parent_categories, serializer, {fields: {category: %i[id name count_products description]}})}
+  end
+
   private
 
   def serializer
