@@ -19,6 +19,7 @@ class User < ApplicationRecord
   has_many :suppliers
   has_one_attached :image
   has_many :customer_preferences, :class_name => 'Customer::Preference'
+  has_one :customer_price_preference, :class_name => 'Customer::PricePreference'
   has_many :categories, through: :customer_preferences
 
   validates :name, presence: true

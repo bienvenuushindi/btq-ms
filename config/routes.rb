@@ -74,10 +74,11 @@ Rails.application.routes.draw do
         resources :individual_orders
         resources :order_details
         resources :payments
-        resources :preferences
+        resources :preferences, only: [:index, :create]
         resources :reviews
         resources :shippings
         resources :products
+        resources :price_preferences, only: [:index, :create]
       end
     end
   end
