@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_05_29_092525) do
+ActiveRecord::Schema[7.0].define(version: 2024_05_29_213632) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -65,6 +65,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_05_29_092525) do
     t.integer "parent_category_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "preference_count", default: 0
     t.index ["parent_category_id"], name: "index_categories_on_parent_category_id"
   end
 
@@ -166,6 +167,16 @@ ActiveRecord::Schema[7.0].define(version: 2024_05_29_092525) do
     t.index ["user_id"], name: "index_customer_price_preferences_on_user_id"
   end
 
+  create_table "customer_ratings", force: :cascade do |t|
+    t.integer "score"
+    t.bigint "user_id", null: false
+    t.bigint "product_detail_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_detail_id"], name: "index_customer_ratings_on_product_detail_id"
+    t.index ["user_id"], name: "index_customer_ratings_on_user_id"
+  end
+
   create_table "customer_reviews", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "rating", default: 0
@@ -212,6 +223,9 @@ ActiveRecord::Schema[7.0].define(version: 2024_05_29_092525) do
     t.bigint "product_id", null: false
     t.boolean "status", default: false
     t.string "currency", default: "usd"
+    t.integer "sales_count", default: 0
+    t.integer "views", default: 0
+    t.decimal "popularity_score", default: "0.0"
     t.index ["product_id"], name: "index_product_details_on_product_id"
   end
 
@@ -339,6 +353,8 @@ ActiveRecord::Schema[7.0].define(version: 2024_05_29_092525) do
   add_foreign_key "customer_preferences", "categories"
   add_foreign_key "customer_preferences", "users"
   add_foreign_key "customer_price_preferences", "users"
+  add_foreign_key "customer_ratings", "product_details"
+  add_foreign_key "customer_ratings", "users"
   add_foreign_key "customer_reviews", "product_details"
   add_foreign_key "customer_reviews", "users"
   add_foreign_key "customer_shippings", "addresses"
