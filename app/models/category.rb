@@ -8,6 +8,8 @@ class Category < ApplicationRecord
   has_many :children, class_name: 'Category', foreign_key: 'parent_category_id'
   has_many :customer_preferences, :class_name => 'Customer::Preference'
   has_many :users, through: :customer_preferences
+  has_one_attached :image
+
 
   # Add these attributes for JSON API serialization
   attribute :name
@@ -17,6 +19,10 @@ class Category < ApplicationRecord
 
   validates :name, presence: true, uniqueness: true
   validates :description, presence: true
+
+  def image_url
+    image.attached? ? image.blob.url  : [ActionController::Base.helpers.image_url('no-img.png')]
+  end
   def self.tree_structure(parent_id = nil)
     categories = where(parent_category_id: parent_id)
 
@@ -27,5 +33,9 @@ class Category < ApplicationRecord
         children: tree_structure(category.id)
       }
     end
+  end
+
+  def descendants
+    children.map { |child| [child] + child.children }.flatten
   end
 end

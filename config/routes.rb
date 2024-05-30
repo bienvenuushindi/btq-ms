@@ -79,6 +79,11 @@ Rails.application.routes.draw do
         resources :shippings
         resources :products
         resources :price_preferences, only: [:index, :create]
+        resources :clients, only: [] do
+          collection do
+            get 'preferences'
+          end
+        end
       end
     end
   end
