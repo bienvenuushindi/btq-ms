@@ -1,4 +1,4 @@
-# Boutique Purchase Requisition ( [click here for the backend](https://github.com/bienvenuushindi/btq-ms-front))
+# Boutique Purchase Requisition ( [click here for the frontend](https://github.com/bienvenuushindi/btq-ms-front))
 
 ## Description
 
