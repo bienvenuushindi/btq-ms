@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_05_29_213632) do
+ActiveRecord::Schema[7.0].define(version: 2024_06_03_130133) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -66,6 +66,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_05_29_213632) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "preference_count", default: 0
+    t.integer "inactive_count_products", default: 0
     t.index ["parent_category_id"], name: "index_categories_on_parent_category_id"
   end
 

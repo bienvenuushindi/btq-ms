@@ -1,4 +1,3 @@
-# app/controllers/api/v1/customers/price_preferences_controller.rb
 class Api::V1::Customers::PricePreferencesController < ApplicationController
   # GET /api/v1/customers/price_preferences
   def index
@@ -7,7 +6,8 @@ class Api::V1::Customers::PricePreferencesController < ApplicationController
 
   # POST /api/v1/customers/price_preferences
   def create
-    @price_preference = Customer::PricePreference.new(user: current_user, price_types: price_preference_params[:price_types])
+    @price_preference = Customer::PricePreference.find_or_initialize_by(user: current_user)
+    @price_preference.price_types = price_preference_params[:price_types]
 
     if @price_preference.save
       render json: @price_preference, status: :created
@@ -23,6 +23,6 @@ class Api::V1::Customers::PricePreferencesController < ApplicationController
   end
 
   def price_preference_params
-    params.require(:customer_price_preference).permit(price_types: [])
+    params.require(:price_preference).permit(price_types: [])
   end
 end

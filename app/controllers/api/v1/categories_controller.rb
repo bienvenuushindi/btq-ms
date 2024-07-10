@@ -3,7 +3,7 @@ class Api::V1::CategoriesController < ApplicationController
 
   def index
     @categories = CategoryService::Retriever.call(Category.all, params)
-    render_collection(paginate(@categories), serializer)
+    render_collection(paginate(@categories), serializer, { fields: { category: serializer.fields } })
   end
 
   def create
@@ -34,7 +34,7 @@ class Api::V1::CategoriesController < ApplicationController
   end
 
   def parents
-    render json: {data: serialize_resources(Category.parent_categories, serializer, {fields: {category: %i[id name count_products description]}})}
+    render json:  serialize_resources(Category.parent_categories, serializer, { fields: { category: %i[id name count_products description image_url] } })
   end
 
   private

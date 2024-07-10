@@ -1,12 +1,13 @@
 class ProductDetail < ApplicationRecord
   MAX_SALES_COUNT = 200
   MAX_VIEWS = 1000
-  # RATINGS_WEIGHT = 0.3
-  # SALES_WEIGHT = 0.5
-  # VIEWS_WEIGHT = 0.2
+  RATINGS_WEIGHT = 0.3
+  SALES_WEIGHT = 0.5
+  VIEWS_WEIGHT = 0.2
   belongs_to :product, class_name: 'Product'
   has_many :price_details
   has_many :suppliers, through: :price_details
+  has_many :categories, through: :product
   has_many :product_detail_requisitions
   has_many :requisitions, through: :product_detail_requisitions
   has_many_attached :images
@@ -17,16 +18,22 @@ class ProductDetail < ApplicationRecord
   validates :unit_price, presence: true
   validates :currency, presence: true
 
+  # default_scope { where(status: true) }
+  # Scope to load inactive records
+  scope :inactive, -> { where(status: false) }
+  scope :active, -> { where(status: true) }
+  # Scope to load all records
+  # scope :all_records, -> { unscope(where: :status) }
 
   scope :details_with_product_name, -> { joins(:product).select('product_details.*, products.name as product_name') }
   scope :sc_expired_soon, -> { where('expired_date > ?', Date.current).where('expired_date <= ?', 2.month.from_now) }
   scope :sc_expired, -> { where('expired_date <= ?', Date.current) }
 
   before_save :calculate_popularity_score
+  after_create :increment_category_counts
+  after_update :update_category_counts
+  after_destroy :update_category_counts_on_destroy
 
-  def self.count(status=nil)
-
-  end
   def self.expired_soon
     details_with_product_name.sc_expired_soon
   end
@@ -56,8 +63,9 @@ class ProductDetail < ApplicationRecord
       .limit(limit)
   end
 
+
   def image_urls
-    images.attached? ? images.map { |image| image.blob.url } :  [ActionController::Base.helpers.image_url('no-img.png')]
+    images.attached? ? images.map { |image| image.blob.url } :  ['https://m.media-amazon.com/images/I/41mQKmbkVWL._AC_SY400_.jpg']
   end
 
   def categories_suppliers
@@ -82,7 +90,7 @@ class ProductDetail < ApplicationRecord
           .order('suppliers.id', 'price_details.updated_at DESC')
   end
   def calculate_popularity_score
-    # ratings_score = customer_ratings.average(:score) || 0
+    ratings_score = customer_ratings.average(:score) || 0
     # sales_count_score = normalize(sales_count, MAX_SALES_COUNT) * SALES_WEIGHT
     # views_score = normalize(views, MAX_VIEWS) * VIEWS_WEIGHT
     #
@@ -92,14 +100,48 @@ class ProductDetail < ApplicationRecord
 
     sales_factor = [sales_count / MAX_SALES_COUNT.to_f, 1].min
     views_factor = [views / MAX_VIEWS.to_f, 1].min
-    rating_factor = (rating || 0) * RATINGS_WEIGHT
+    rating_factor = ratings_score * RATINGS_WEIGHT
 
     self.popularity_score = (sales_factor + views_factor + rating_factor) / 3.0
   end
+
 
   private
 
   def normalize(value, max_value)
     [value.to_f / max_value, 1.0].min  # Ensure the normalized value is capped at 1.0
+  end
+  def increment_category_counts
+    categories.each do |category|
+      if status
+        category.increment!(:count_products)
+      else
+        category.increment!(:inactive_count_products)
+      end
+    end
+  end
+
+  def update_category_counts
+    categories.each do |category|
+      if status_changed?
+        if status
+          category.increment!(:count_products)
+          category.decrement!(:inactive_count_products)
+        else
+          category.decrement!(:count_products)
+          category.increment!(:inactive_count_products)
+        end
+      end
+    end
+  end
+
+  def update_category_counts_on_destroy
+    categories.each do |category|
+      if status
+        category.decrement!(:count_products)
+      else
+        category.decrement!(:inactive_count_products)
+      end
+    end
   end
 end

@@ -74,7 +74,7 @@ Rails.application.routes.draw do
         resources :individual_orders
         resources :order_details
         resources :payments
-        resources :preferences, only: [:index, :create]
+        resources :preferences, only: [:create]
         resources :reviews
         resources :shippings
         resources :products

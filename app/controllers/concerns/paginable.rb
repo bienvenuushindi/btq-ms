@@ -11,7 +11,7 @@ module Paginable
   end
 
   def paginate(collection)
-    params = pagination_params || { number: 1, size: 10 };
+    params = pagination_params || { number: 1, size: 10 }
 
     paginator.call(collection, params:, base_url: request.url)
   end

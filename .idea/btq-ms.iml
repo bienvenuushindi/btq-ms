@@ -402,6 +402,11 @@
               </RakeTaskImpl>
             </subtasks>
           </RakeTaskImpl>
+          <RakeTaskImpl id="categories">
+            <subtasks>
+              <RakeTaskImpl description="Update active and inactive product counts for each category" fullCommand="categories:update_product_counts" id="update_product_counts" />
+            </subtasks>
+          </RakeTaskImpl>
           <RakeTaskImpl id="cloudinary">
             <subtasks>
               <RakeTaskImpl description="Fetch the latest JavaScript library files and create the JavaScript index files" fullCommand="cloudinary:fetch_assets" id="fetch_assets" />
