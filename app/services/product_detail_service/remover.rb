@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-module ProductDetailServicee
+module ProductDetailService
   class Remover < BaseService::Remover
   end
 end
