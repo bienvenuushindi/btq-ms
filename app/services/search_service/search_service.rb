@@ -1,4 +1,4 @@
-module SupplierService
+module SearchService
   class << self
     def search_records(scope, query, options = {})
       return scope.none if scope.nil? || query.nil? || query.empty?
