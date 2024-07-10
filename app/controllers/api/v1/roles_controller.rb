@@ -21,7 +21,7 @@ class Api::V1::RolesController < ApplicationController
   private
 
   def serializer
-    RoleSerializer
+    RoleSerializer.new()
   end
 
   def role_params

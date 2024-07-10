@@ -11,7 +11,7 @@ module Paginable
   end
 
   def paginate(collection)
-    params = pagination_params || { number: 1, size: 10 };
+    params = pagination_params || { number: 1, size: 10 }
 
     paginator.call(collection, params:, base_url: request.url)
   end
@@ -22,6 +22,7 @@ module Paginable
     meta: paginated.meta.to_h, # Will get total pages, total count, etc.
     links: paginated.links.to_h
   }
+
 
   # Merge custom_fields with attributes and pagination_options
   result = attributes.merge(pagination_options).merge(custom_fields)

@@ -12,17 +12,25 @@ class Product < ApplicationRecord
   validates :short_description, presence: true
   validates :country_origin, presence: true
 
-  # New method to filter by status
-  def self.by_status(status)
-    where(active: status)
+  scope :inactive, -> { where(active: false) }
+  scope :active, -> { where(active: true) }
+
+  # New method to filter by active
+  def self.count_active
+    active.count
   end
 
-  def self.count_by_status(status)
-    self.by_status(status).count
+  # Method to count inactive products
+  def self.count_inactive
+    inactive.count
+  end
+
+  def self.by_status(status)
+     where(active: status)
   end
 
   def image_urls
-    images.attached? ? images.map { |image| image.blob.url } : [ActionController::Base.helpers.image_url('no-img.png')]
+    images.attached? ? images.map { |image| image.blob.url } : ['https://m.media-amazon.com/images/I/41mQKmbkVWL._AC_SY400_.jpg']
   end
 
 end

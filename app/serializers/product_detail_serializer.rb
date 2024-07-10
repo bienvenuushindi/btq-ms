@@ -35,10 +35,16 @@ class ProductDetailSerializer < Serializer
     object.tags.map(&:name)
   end
 
+
+
   %i[unit_price dozen_price box_price dozen_units box_units].each do |price_attribute|
     attribute price_attribute do |object|
       self.format_price(object.public_send(price_attribute))
     end
+  end
+
+  attribute :product_name do |object|
+    object.product.name if object.product
   end
 
   attribute :product_name do |object|

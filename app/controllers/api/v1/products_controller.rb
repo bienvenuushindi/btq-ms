@@ -1,5 +1,4 @@
 class Api::V1::ProductsController < ApplicationController
-  include CategoryHelper
   before_action :find_product, only: %i[show update]
 
   def index
@@ -9,7 +8,7 @@ class Api::V1::ProductsController < ApplicationController
 
   def search
     @products = ProductService::Searcher.call(Product.all, params)
-    render_collection(paginate(@products), serializer, search_options)
+    render_collection(paginate(@products), serializer, ProductService::Helper.search_options)
   end
 
   def count_by_status
@@ -19,11 +18,7 @@ class Api::V1::ProductsController < ApplicationController
 
   def create
     @product = ProductService::Creator.call(product_params, current_user)
-    if @product.persisted?
-      render json: serialize_resource(@product, serializer), status: :created
-    else
-      render json: error_response(@product), status: :unprocessable_entity
-    end
+    render_serialized_resource(@product, serializer, :created )
   end
 
   def show
@@ -44,15 +39,11 @@ class Api::V1::ProductsController < ApplicationController
     @product = ProductService::Reader.call(params[:id])
   end
 
-  def search_options
-    { fields: { product: %i[name details] } }
-  end
-
   def serializer
     ProductSerializer
   end
 
   def product_params
-    params.require(:product).permit(:name, :short_description, :description, :active, :country_origin, :tags, :categories, images: [])
+    ProductService::Helper.product_params(params)
   end
 end
