@@ -27,7 +27,7 @@ module ProductDetailService
     private
 
     def attach_images_to_result
-      @scope.with_attached_images
+      @scope.includes(:product, :price_details, :suppliers, :tags).with_attached_images
     end
   end
 end

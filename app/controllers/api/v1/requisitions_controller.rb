@@ -53,7 +53,7 @@ class Api::V1::RequisitionsController < ApplicationController
   private
 
   def set_requisition
-    @requisition = Requisition::Reader.call(params[:id])
+    @requisition = RequisitionService::Reader.call(params[:id])
   end
 
   def serializer
