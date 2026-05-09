@@ -28,7 +28,19 @@ class User < ApplicationRecord
   validates :password, presence: true, length: { minimum: 6 }, on: :create
 
   def image_url
-    image.attached? ? image.blob.url : [ActionController::Base.helpers.image_url('no-img.png')]
+    image.attached? ? image.blob.url : default_image_url
+  end
+
+  def default_currency
+    country_code = addresses.first&.country&.code
+
+    {
+      'CG' => 'fc',
+      'RW' => 'rw',
+      'UG' => 'ugx',
+      'KE' => 'usd',
+      'QA' => 'usd'
+    }.fetch(country_code, 'usd')
   end
 
   def price_preference_modified
@@ -49,5 +61,22 @@ class User < ApplicationRecord
 
   def categories_with_descendants
     categories.flat_map { |category| [category] + category.descendants }.uniq
+  end
+
+  private
+
+  def default_image_url
+    base_url = ENV['APP_URL'].presence
+    base_url ||= begin
+      options = Rails.application.config.action_mailer.default_url_options || {}
+      host = options[:host]
+      port = options[:port]
+      if host.present?
+        protocol = options[:protocol].presence || 'http'
+        [protocol, '://', host, (port.present? ? ":#{port}" : '')].join
+      end
+    end
+
+    [base_url.to_s.chomp('/'), '/images/user-placeholder.svg'].join
   end
 end

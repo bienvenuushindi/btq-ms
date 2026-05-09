@@ -51,6 +51,23 @@ class ProductDetailSerializer < Serializer
     object.product.name if object.product
   end
 
+  attribute :expired_status do |object|
+    if object.expired_date.nil?
+      "unknown"
+    else
+      today = Date.today
+      expired_date = object.expired_date.to_date
+
+      if expired_date < today
+        "expired"
+      elsif expired_date <= today + 2.months
+        "soon"
+      else
+        "good"
+      end
+    end
+  end
+
 
 
   class << self

@@ -13,7 +13,14 @@ class ProductDetail < ApplicationRecord
   has_many_attached :images
   has_many :customer_ratings, :class_name => 'Customer::Rating'
   acts_as_taggable_on :tags
+  before_validation :normalize_size
+  before_validation :round_price_values
   validates :size, presence: true
+  validates :size, uniqueness: {
+    scope: :product_id,
+    case_sensitive: false,
+    message: 'has already been used for this product'
+  }
   validates :expired_date, presence: true
   validates :unit_price, presence: true
   validates :currency, presence: true
@@ -65,7 +72,7 @@ class ProductDetail < ApplicationRecord
 
 
   def image_urls
-    images.attached? ? images.map { |image| image.blob.url } :  ['https://m.media-amazon.com/images/I/41mQKmbkVWL._AC_SY400_.jpg']
+    images.attached? ? images.map { |image| image.blob.url } : [default_image_url]
   end
 
   def categories_suppliers
@@ -108,6 +115,21 @@ class ProductDetail < ApplicationRecord
 
   private
 
+  def default_image_url
+    base_url = ENV['APP_URL'].presence
+    base_url ||= begin
+      options = Rails.application.config.action_mailer.default_url_options || {}
+      host = options[:host]
+      port = options[:port]
+      if host.present?
+        protocol = options[:protocol].presence || 'http'
+        [protocol, '://', host, (port.present? ? ":#{port}" : '')].join
+      end
+    end
+
+    [base_url.to_s.chomp('/'), '/images/product-placeholder.png'].join
+  end
+
   def normalize(value, max_value)
     [value.to_f / max_value, 1.0].min  # Ensure the normalized value is capped at 1.0
   end
@@ -143,5 +165,15 @@ class ProductDetail < ApplicationRecord
         category.decrement!(:inactive_count_products)
       end
     end
+  end
+
+  def normalize_size
+    self.size = size.to_s.strip.presence
+  end
+
+  def round_price_values
+    self.unit_price = unit_price.to_d.round(2) if unit_price.present?
+    self.dozen_price = dozen_price.to_d.round(2) if dozen_price.present?
+    self.box_price = box_price.to_d.round(2) if box_price.present?
   end
 end

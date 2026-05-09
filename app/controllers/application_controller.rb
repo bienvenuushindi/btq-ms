@@ -15,10 +15,10 @@ class ApplicationController < ActionController::API
   end
 
   def render_serialized_resource(resource, serializer, status)
-    if resource.persisted?
+    if resource&.persisted?
       render json: serialize_resource(resource, serializer), status: status
     else
-      render json: error_response(resource), status: :unprocessable_entity
+      render json: resource ? error_response(resource) : { status: { code: 422, message: 'The request could not be completed.' } }, status: :unprocessable_entity
     end
   end
 

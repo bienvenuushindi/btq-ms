@@ -25,6 +25,15 @@ class Api::V1::ProductDetailsController < ApplicationController
     )
   end
 
+  def shelf_life_stats
+    render json: {
+      data: {
+        expiring_soon: ProductDetail.count_expired_soon,
+        expired: ProductDetail.count_expired
+      }
+    }, status: :ok
+  end
+
   def create
     @product_detail = ProductDetailService::Creator.call(product_detail_params.merge(product_id: params[:product_id]))
     render_serialized_resource(@product_detail, serializer, :created)

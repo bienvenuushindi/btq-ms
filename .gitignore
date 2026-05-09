@@ -29,3 +29,4 @@
 /config/master.key
 /config/cloudinary.yml
 .idea
+.env

@@ -35,7 +35,7 @@ class Category < ApplicationRecord
   end
 
   def image_url
-    image.attached? ? image.blob.url : ['https://m.media-amazon.com/images/I/41EcYoIZhIL._AC_SY400_.jpg']
+    image.attached? ? image.blob.url : default_image_url
   end
 
   def self.tree_structure(parent_id = nil)
@@ -60,5 +60,22 @@ class Category < ApplicationRecord
 
   def self.popular
     Category.order(preference_count: :desc)
+  end
+
+  private
+
+  def default_image_url
+    base_url = ENV['APP_URL'].presence
+    base_url ||= begin
+      options = Rails.application.config.action_mailer.default_url_options || {}
+      host = options[:host]
+      port = options[:port]
+      if host.present?
+        protocol = options[:protocol].presence || 'http'
+        [protocol, '://', host, (port.present? ? ":#{port}" : '')].join
+      end
+    end
+
+    [base_url.to_s.chomp('/'), '/images/category-placeholder.svg'].join
   end
 end

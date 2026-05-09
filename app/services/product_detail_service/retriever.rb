@@ -14,13 +14,13 @@ module ProductDetailService
     end
 
     def self.expired_soon(params)
-       limit = params.fetch(:limit, 5)
-       ProductDetail.last_soon_expired(limit)
+       scope = ProductDetail.expired_soon
+       params[:limit].present? ? scope.limit(params[:limit]) : scope
     end
 
     def self.expired(params)
-       limit = params.fetch(:limit, 5)
-       ProductDetail.last_expired(limit)
+       scope = ProductDetail.expired
+       params[:limit].present? ? scope.limit(params[:limit]) : scope
     end
 
 

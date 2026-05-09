@@ -17,7 +17,16 @@
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   if Rails.env.development?
-    origins = %w[localhost:3000 localhost:3001 localhost:5000 192.168.70.49:8081 www.xyz.com].freeze
+    origins = %w[
+      localhost:3000
+      localhost:3001
+      localhost:5000
+      127.0.0.1:3000
+      127.0.0.1:3001
+      127.0.0.1:5000
+      192.168.70.49:8081
+      www.xyz.com
+    ].freeze
     allow do
       origins origins
       resource '*',

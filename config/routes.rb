@@ -34,8 +34,13 @@ Rails.application.routes.draw do
       end
       resources :products, only: [:index, :create, :show, :update]
       resources :product_details, only: [] do
-        resources :price_details, only: [:index, :create, :show]
+        resources :price_details, only: [:index, :create, :show] do
+          collection do
+            delete 'supplier/:supplier_id', to: 'price_details#destroy_for_supplier'
+          end
+        end
         collection do
+          get 'shelf_life_stats'
           get 'expiring_soon'
           get 'expired'
         end
@@ -56,7 +61,7 @@ Rails.application.routes.draw do
       end
       resources :suppliers, only: [:index, :create, :show, :update]
       # resources :addresses, only: [:index, :create, :show]
-      resources :users, only: [:index, :show]
+      resources :users, only: [:index, :show, :update]
       resources :requisition_products, only: [] do
         member do
 

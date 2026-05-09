@@ -23,11 +23,12 @@ module RequisitionService
 
     private
     def update_price_detail
-      price = @params[:price]
-      currency = @params[:currency]
-      supplier_id = @params[:supplier_id]
+      price_params = RequisitionService::Helper.update_requisition_params(@params)
+      price = price_params[:price]
+      currency = price_params[:currency]
+      supplier_id = price_params[:supplier_id]
       product_detail_id = @params[:product_detail_id]
-      quantity_type = @params[:quantity_type]
+      quantity_type = price_params[:quantity_type]
       PriceDetail.custom_upsert({ quantity_type => price }, currency, supplier_id, product_detail_id)
     end
   end

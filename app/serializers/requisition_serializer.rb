@@ -5,7 +5,7 @@ class RequisitionSerializer < Serializer
   # end
 
   attribute :total_price do |object|
-    object[:total_price] || 0
+    object[:total_price].to_d.round(2).to_f || 0
   end
 
   attribute :price_currency do |object|
@@ -33,6 +33,11 @@ class RequisitionSerializer < Serializer
         **product_detail_hash, # Spread the attributes of product_detail
         image_urls: product_detail.image_urls, # Use the image_urls method from the ProductDetail model
         quantity_type: ProductDetailRequisition.reverse_quantity_types[product_detail.quantity_type],
+        supplier_name: Supplier.find_by(id: product_detail.supplier_id)&.shop_name,
+        price: product_detail.price.to_d.round(2).to_f,
+        unit_price: product_detail.unit_price.to_d.round(2).to_f,
+        dozen_price: product_detail.dozen_price.to_d.round(2).to_f,
+        box_price: product_detail.box_price.to_d.round(2).to_f,
       }
     end
   end

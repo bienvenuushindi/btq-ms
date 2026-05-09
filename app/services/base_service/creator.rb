@@ -10,7 +10,7 @@ module BaseService
       create_record
     rescue ActiveRecord::RecordInvalid => e
       handle_error(e)
-      nil
+      e.record
     end
 
     def create_record

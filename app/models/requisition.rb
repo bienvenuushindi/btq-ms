@@ -11,6 +11,20 @@ class Requisition < ApplicationRecord
   scope :most_recent_active, -> { active.order(created_at: :desc).limit(1) }
 
   scope :select_home_result, -> { select(:id, :total_price, :count_products_bought, :count_products, :price_currency, :date) }
+  before_validation do
+    self.total_price = total_price.present? ? total_price.to_d.round(2) : 0
+  end
+
+  def self.by_status(status)
+    case status.to_s
+    when 'true', 'archived'
+      archived
+    when 'false', 'not_archived', 'active'
+      where(archived: [false, nil])
+    else
+      all
+    end
+  end
 
   def self.most_recent_requisitions
     archived_result = most_recent_archived&.select_home_result&.first

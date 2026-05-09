@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_06_03_130133) do
+ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -227,6 +227,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_03_130133) do
     t.integer "sales_count", default: 0
     t.integer "views", default: 0
     t.decimal "popularity_score", default: "0.0"
+    t.index "product_id, lower(btrim((size)::text))", name: "index_product_details_on_product_id_and_normalized_size", unique: true
     t.index ["product_id"], name: "index_product_details_on_product_id"
   end
 
@@ -270,7 +271,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_03_130133) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.date "date", default: "2024-01-15"
+    t.date "date", default: "2025-12-08"
     t.index ["archived", "created_at"], name: "index_requisitions_on_archived_and_created_at"
     t.index ["user_id"], name: "index_requisitions_on_user_id"
   end

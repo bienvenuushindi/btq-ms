@@ -10,5 +10,16 @@ module RequisitionService
       apply_filters
       apply_sorting
     end
+
+    private
+
+    def apply_sorting
+      sort_column = @sort_column.include?(@params[:sort]) ? @params[:sort] : 'created_at'
+      sort_direction = @sort_direction.include?(@params[:direction]) ? @params[:direction] : 'desc'
+
+      @scope = @scope.reorder(
+        Arel.sql("CASE WHEN archived = TRUE THEN 1 ELSE 0 END ASC, #{sort_column} #{sort_direction.upcase}")
+      )
+    end
   end
 end

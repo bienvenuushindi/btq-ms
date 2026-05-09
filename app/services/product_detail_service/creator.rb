@@ -5,6 +5,10 @@ module ProductDetailService
       super(params)
     end
 
+    def call
+      create_record
+    end
+
     private
 
     def create_record

@@ -3,13 +3,13 @@ class SupplierSerializer < Serializer
 
   attribute :address do |object|
     {
-      address1: object.address.line1,
-      address2: object.address.line2,
-      city: object.address.city,
-      country: object.country.name,
-      code: object.country.code,
-      tel1: object.address.phone_number1,
-      tel2: object.address.phone_number2
+      address1: object.address&.line1,
+      address2: object.address&.line2,
+      city: object.address&.city,
+      country: object.country&.name,
+      code: object.country&.code,
+      tel1: object.address&.phone_number1,
+      tel2: object.address&.phone_number2
     }
   end
   
