@@ -9,6 +9,13 @@ module CategoryService
     def call
       apply_filters
       apply_sorting
+      attach_images_to_result
+    end
+
+    private
+
+    def attach_images_to_result
+      @scope.with_attached_image
     end
   end
 end

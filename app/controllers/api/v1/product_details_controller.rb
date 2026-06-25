@@ -3,8 +3,6 @@ class Api::V1::ProductDetailsController < ApplicationController
   before_action :set_product, only: %i[index]
 
   def index
-    options = {}
-    render json: serialize_resources(data, serializer, options), status: :ok
     @product_details = ProductDetailService::Retriever.call(@product.product_details, params)
     render_collection(paginate(@product_details), serializer, ProductDetailService::Helper.index_options)
   end

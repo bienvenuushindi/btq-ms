@@ -16,10 +16,10 @@ class Api::V1::CategoriesController < ApplicationController
   end
 
   def update
-    if CategoryService::Updater.call(@category, product_params)
+    if CategoryService::Updater.call(@category, category_params)
       render json: serialize_resource(@category, serializer), status: :ok
     else
-      render json: error_response(@category, 'Failed to update the product'), status: :unprocessable_entity
+      render json: error_response(@category, 'Failed to update the category'), status: :unprocessable_entity
     end
   end
 
