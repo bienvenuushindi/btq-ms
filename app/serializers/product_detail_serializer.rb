@@ -1,5 +1,5 @@
 class ProductDetailSerializer < Serializer
-  attributes :id, :size, :currency, :expired_date, :dozen_units, :box_units, :created_at, :image_urls, :status
+  attributes :id, :product_id, :size, :expired_date, :dozen_units, :box_units, :created_at, :image_urls, :status, :approval_status, :rejection_reason
   belongs_to :product
   has_many :price_details
   has_many :suppliers
@@ -27,6 +27,26 @@ class ProductDetailSerializer < Serializer
     end
   end
 
+  attribute :supplier_status, if: proc { |_object, params| params&.[](:current_user)&.supplier? } do |object, params|
+    selection = ProductDetailSerializer.supplier_selection(object, params&.[](:current_user))
+    selection&.supplier_status
+  end
+
+  attribute :shop_prices, if: proc { |_object, params| params&.[](:current_user)&.supplier? } do |object, params|
+    supplier_ids = params[:current_user].suppliers.select(:id)
+    object.price_details
+      .where(supplier_id: supplier_ids)
+      .map do |price_detail|
+        {
+          id: price_detail.id,
+          price: price_detail.price,
+          quantity_type: price_detail.quantity_type,
+          currency: price_detail.currency,
+          supplier_status: price_detail.supplier_status
+        }
+      end
+  end
+
   attribute :categories_suppliers do |object|
     object.categories_suppliers
   end
@@ -35,11 +55,9 @@ class ProductDetailSerializer < Serializer
     object.tags.map(&:name)
   end
 
-
-
-  %i[unit_price dozen_price box_price dozen_units box_units].each do |price_attribute|
-    attribute price_attribute do |object|
-      self.format_price(object.public_send(price_attribute))
+  %i[dozen_units box_units].each do |pack_attribute|
+    attribute pack_attribute do |object|
+      object.public_send(pack_attribute)
     end
   end
 
@@ -68,12 +86,11 @@ class ProductDetailSerializer < Serializer
     end
   end
 
-
-
   class << self
-    def format_price(price)
-      price.to_f.zero? ? '-' : price.to_s
+    def supplier_selection(object, current_user)
+      return unless current_user&.supplier?
+
+      object.supplier_product_details.find_by(supplier_id: current_user.suppliers.select(:id))
     end
   end
-
 end

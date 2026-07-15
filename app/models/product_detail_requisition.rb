@@ -3,6 +3,7 @@ class ProductDetailRequisition < ApplicationRecord
   belongs_to :requisition
   belongs_to :product_detail
   belongs_to :supplier, optional: true
+  belongs_to :buyer_supplier, class_name: 'Supplier', optional: true
   enum :quantity_type, { box: 0, dozen: 1, unit: 2 }
   enum :currency, { usd: 'usd', fc: 'fc', ugx: 'ugx', rw:'rw' }
   after_create :update_product_count
@@ -12,7 +13,10 @@ class ProductDetailRequisition < ApplicationRecord
   before_validation :round_price_values
   after_destroy :downgrade_product_count
   before_destroy :decrement_total_price
-  scope :bought, -> { where(status: true) }
+  PENDING_STATUS = 0
+  PURCHASED_STATUS = 1
+
+  scope :bought, -> { where(status: PURCHASED_STATUS) }
 
 
   def self.reverse_quantity_types
@@ -24,7 +28,7 @@ class ProductDetailRequisition < ApplicationRecord
   end
 
   def set_default_status
-    self.status = false if status.nil?
+    self.status = PENDING_STATUS if status.nil?
   end
 
   def update_product_count
@@ -36,32 +40,19 @@ class ProductDetailRequisition < ApplicationRecord
   end
 
   def update_total_price
-    q = quantity.to_i
-    p = price.to_d
-    requisition.update!(
-      total_price: (requisition.total_price.to_d + (q * p)).round(2)
-    )
-    # requisition.increment!(:total_price, q * p)
+    requisition.recalculate_purchased_total_price!
   end
 
   def decrement_total_price
-    q = quantity.to_i
-    p = price.to_d
-
-    requisition.update!(
-      total_price: (requisition.total_price.to_d - (q * p)).round(2)
-    )
-    # requisition.decrement!(:total_price, q * p)
+    true
   end
 
   def downgrade_product_count
-    q = quantity.to_i
-    p = price.to_d
-
+    requisition.decrement!(:count_products)
     requisition.update!(
-      total_price: (requisition.total_price.to_d - (q * p)).round(2)
+      count_products_bought: requisition.product_detail_requisitions.bought.count
     )
-    # requisition.increment!(:total_price, q * p)
+    requisition.recalculate_purchased_total_price!
   end
 
   def round_price_values

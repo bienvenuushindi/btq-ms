@@ -1,6 +1,6 @@
 # serializers/price_detail_serializer.rb
 class PriceDetailSerializer < Serializer
-  attributes :id, :price, :quantity_type, :currency
+  attributes :id, :price, :quantity_type, :currency, :supplier_status
 
   belongs_to :product_detail
   belongs_to :supplier

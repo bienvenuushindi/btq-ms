@@ -8,10 +8,19 @@ module RequisitionService
 
     def call
       apply_filters
+      apply_date_filter
       apply_sorting
     end
 
     private
+
+    def apply_date_filter
+      return if @params[:date].blank?
+
+      @scope = @scope.where(date: Date.parse(@params[:date]))
+    rescue ArgumentError
+      @scope = @scope.none
+    end
 
     def apply_sorting
       sort_column = @sort_column.include?(@params[:sort]) ? @params[:sort] : 'created_at'

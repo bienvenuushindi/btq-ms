@@ -5,9 +5,9 @@ module RequisitionService
       super(Requisition, resource_id)
     end
 
-    def self.find_by_date(params)
+    def self.find_by_date(params, scope = Requisition.all)
       date = parse_date(params[:date])
-      Requisition.find_by(date: date)
+      scope.find_by(date: date)
     rescue ArgumentError => e
       raise ArgumentError, 'Invalid date format'
     end

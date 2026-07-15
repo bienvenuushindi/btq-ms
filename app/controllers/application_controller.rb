@@ -14,9 +14,9 @@ class ApplicationController < ActionController::API
     render json: { error: 'Route not found' }, status: :not_found
   end
 
-  def render_serialized_resource(resource, serializer, status)
+  def render_serialized_resource(resource, serializer, status, options = {})
     if resource&.persisted?
-      render json: serialize_resource(resource, serializer), status: status
+      render json: serialize_resource(resource, serializer, options), status: status
     else
       render json: resource ? error_response(resource) : { status: { code: 422, message: 'The request could not be completed.' } }, status: :unprocessable_entity
     end

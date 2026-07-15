@@ -13,13 +13,13 @@ module ProductDetailService
       attach_images_to_result
     end
 
-    def self.expired_soon(params)
-       scope = ProductDetail.expired_soon
+    def self.expired_soon(params, scope = ProductDetail.all)
+       scope = scope.details_with_product_name.sc_expired_soon
        params[:limit].present? ? scope.limit(params[:limit]) : scope
     end
 
-    def self.expired(params)
-       scope = ProductDetail.expired
+    def self.expired(params, scope = ProductDetail.all)
+       scope = scope.details_with_product_name.sc_expired
        params[:limit].present? ? scope.limit(params[:limit]) : scope
     end
 

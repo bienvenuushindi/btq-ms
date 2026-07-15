@@ -1,6 +1,17 @@
 class UserSerializer < Serializer
   attributes :id, :email, :name, :phone_number, :image_url, :default_currency
 
+  attribute :role do |object|
+    object.role&.name
+  end
+
+  attribute :supplier do |object|
+    supplier = object.suppliers.order(:created_at).first
+    next nil unless supplier
+
+    SupplierSerializer.new(supplier).serializable_hash[:data][:attributes]
+  end
+
   attribute :image_urls do |object|
     Array(object.image_url)
   end

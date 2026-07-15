@@ -1,11 +1,15 @@
 class ProductDetail < ApplicationRecord
+  include AttachmentUrlHelper
   MAX_SALES_COUNT = 200
   MAX_VIEWS = 1000
   RATINGS_WEIGHT = 0.3
   SALES_WEIGHT = 0.5
   VIEWS_WEIGHT = 0.2
   belongs_to :product, class_name: 'Product'
+  belongs_to :submitted_by, class_name: 'User', optional: true
+  belongs_to :reviewed_by, class_name: 'User', optional: true
   has_many :price_details
+  has_many :supplier_product_details
   has_many :suppliers, through: :price_details
   has_many :categories, through: :product
   has_many :product_detail_requisitions
@@ -13,8 +17,9 @@ class ProductDetail < ApplicationRecord
   has_many_attached :images
   has_many :customer_ratings, :class_name => 'Customer::Rating'
   acts_as_taggable_on :tags
+  enum :approval_status, { pending_review: 0, approved: 1, rejected: 2 }
   before_validation :normalize_size
-  before_validation :round_price_values
+  before_validation :sync_status_with_approval_status
   validates :size, presence: true
   validates :size, uniqueness: {
     scope: :product_id,
@@ -22,13 +27,43 @@ class ProductDetail < ApplicationRecord
     message: 'has already been used for this product'
   }
   validates :expired_date, presence: true
-  validates :unit_price, presence: true
-  validates :currency, presence: true
 
   # default_scope { where(status: true) }
   # Scope to load inactive records
   scope :inactive, -> { where(status: false) }
   scope :active, -> { where(status: true) }
+  scope :visible_catalog, -> { approved.active.joins(:product).merge(Product.visible_catalog) }
+  scope :supplier_shop_for, lambda { |user|
+    supplier_ids = user.suppliers.select(:id)
+    selected_product_detail_ids = SupplierProductDetail
+      .where(supplier_id: supplier_ids)
+      .select(:product_detail_id)
+
+    where(id: selected_product_detail_ids)
+      .or(where(submitted_by_id: user.id))
+  }
+  scope :visible_to, lambda { |user|
+    if user&.admin?
+      joins(:product).merge(Product.public_reviewable)
+    elsif user&.supplier?
+      supplier_ids = user.suppliers.select(:id)
+      selected_product_detail_ids = PriceDetail
+        .where(supplier_id: supplier_ids)
+        .select(:product_detail_id)
+      shop_product_detail_ids = SupplierProductDetail
+        .where(supplier_id: supplier_ids)
+        .select(:product_detail_id)
+
+      where(id: visible_catalog.select(:id))
+        .or(where(submitted_by_id: user.id))
+        .or(where(id: selected_product_detail_ids))
+        .or(where(id: shop_product_detail_ids))
+    elsif user
+      visible_catalog.or(where(submitted_by_id: user.id))
+    else
+      visible_catalog
+    end
+  }
   # Scope to load all records
   # scope :all_records, -> { unscope(where: :status) }
 
@@ -63,6 +98,26 @@ class ProductDetail < ApplicationRecord
     sc_expired_soon.count
   end
 
+  def approve!(reviewer)
+    update!(
+      approval_status: :approved,
+      status: true,
+      reviewed_by: reviewer,
+      reviewed_at: Time.current,
+      rejection_reason: nil
+    )
+  end
+
+  def reject!(reviewer, reason = nil)
+    update!(
+      approval_status: :rejected,
+      status: false,
+      reviewed_by: reviewer,
+      reviewed_at: Time.current,
+      rejection_reason: reason
+    )
+  end
+
   def self.fetch_by_category_ids(category_ids, limit)
     joins(product: :categories)
       .where(categories: { id: category_ids })
@@ -72,7 +127,7 @@ class ProductDetail < ApplicationRecord
 
 
   def image_urls
-    images.attached? ? images.map { |image| image.blob.url } : [default_image_url]
+    attachment_urls_or_default(images, default_image_url)
   end
 
   def categories_suppliers
@@ -82,7 +137,8 @@ class ProductDetail < ApplicationRecord
   def suppliers_prices
     price_details.joins(supplier: [:country, :address]).select(
             'DISTINCT ON (suppliers.id) price_details.currency',
-            'price_details.id',
+            'suppliers.id',
+            'price_details.id as price_detail_id',
             'price_details.price',
             'price_details.quantity_type',
             'suppliers.shop_name',
@@ -171,9 +227,8 @@ class ProductDetail < ApplicationRecord
     self.size = size.to_s.strip.presence
   end
 
-  def round_price_values
-    self.unit_price = unit_price.to_d.round(2) if unit_price.present?
-    self.dozen_price = dozen_price.to_d.round(2) if dozen_price.present?
-    self.box_price = box_price.to_d.round(2) if box_price.present?
+  def sync_status_with_approval_status
+    self.status = approved?
   end
+
 end

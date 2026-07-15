@@ -1,19 +1,23 @@
 class Api::V1::PriceDetailsController < ApplicationController
   def index
-    prices = ProductDetailService::Reader.call(params[:product_detail_id]).price_details
+    prices = ProductDetail.visible_to(current_user).find(params[:product_detail_id]).price_details
     render json: { data: serializer.group_by_supplier(prices) }, status: :ok
   end
 
   def create
-    if PriceDetailService::Creator.call(price_detail_params)
-      render json: { status: 'success' }, status: :ok
-    else
-      render json: { status: 'error' }, status: :unprocessable_entity
+    result = PriceDetailService::Creator.call(price_detail_params)
+    if result.respond_to?(:errors) && result.errors.any?
+      render json: error_response(result), status: :unprocessable_entity
+      return
     end
+
+    render json: { status: 'success' }, status: :ok
+  rescue ActiveRecord::RecordInvalid => e
+    render json: error_response(e.record), status: :unprocessable_entity
   end
 
   def show
-    render json: serialize_resource(PriceDetailService::Reader.call(params[:id]), serializer), status: :ok
+    render json: serialize_resource(visible_price_details.find(params[:id]), serializer), status: :ok
   end
 
   def destroy_for_supplier
@@ -38,5 +42,9 @@ class Api::V1::PriceDetailsController < ApplicationController
 
   def price_detail_params
     PriceDetailService::Helper.price_detail_params(params)
+  end
+
+  def visible_price_details
+    PriceDetail.joins(:product_detail).merge(ProductDetail.visible_to(current_user))
   end
 end

@@ -24,10 +24,23 @@ module ProductService
         name: @params[:name],
         short_description: @params[:short_description],
         description: @params[:description],
-        active: @params[:active],
+        approval_status: approval_status,
+        active: @current_user.admin?,
+        catalog_scope: catalog_scope,
         country_origin: @params[:country_origin],
+        submitted_by: @current_user,
+        reviewed_by: (@current_user if @current_user.admin?),
+        reviewed_at: (@current_user.admin? ? Time.current : nil),
         images: @params[:images]
       ).tap { |product| product.tag_list = @params[:tags] unless @params[:tags].blank? }
+    end
+
+    def approval_status
+      @current_user.admin? ? :approved : :pending_review
+    end
+
+    def catalog_scope
+      Product.catalog_scopes.key?(@params[:catalog_scope].to_s) ? @params[:catalog_scope] : :public_catalog
     end
 
     def add_categories

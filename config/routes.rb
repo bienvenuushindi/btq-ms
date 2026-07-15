@@ -15,6 +15,8 @@ Rails.application.routes.draw do
     namespace :v1 do
       get 'products/search', to: 'products#search'
       get 'products/stats', to: 'products#count_by_status'
+      get 'products/market/search', to: 'products#market_search'
+      get 'products/market', to: 'products#market'
       get 'suppliers/search/filter(/:product_detail_id)', to: 'suppliers#search'
       get 'tags/search', to: 'tags#search'
       resources :roles, only: [:index, :create, :show]
@@ -33,6 +35,13 @@ Rails.application.routes.draw do
         resources :product_details, only: [:index, :create, :show, :update]
       end
       resources :products, only: [:index, :create, :show, :update]
+      resources :supplier_product_details, only: [] do
+        collection do
+          post 'bulk', to: 'supplier_product_details#bulk_create'
+          delete 'product/:product_id', to: 'supplier_product_details#destroy_product'
+          delete 'product_detail/:product_detail_id', to: 'supplier_product_details#destroy_product_detail'
+        end
+      end
       resources :product_details, only: [] do
         resources :price_details, only: [:index, :create, :show] do
           collection do

@@ -119,15 +119,9 @@ puts "✅ Created #{suppliers.count} Suppliers and multiple Addresses."
 # --- 5. Categories ---
 puts "🏷️ Creating Categories..."
 main_categories = []
-main_categories << Category.create!(
-  name: 'Beauty',
-  description: Faker::Lorem.sentence,
-  active: true
-)
-
-4.times do
+%w[Beauty Electronics Fashion Home Grocery].each do |name|
   main_categories << Category.create!(
-    name: Faker::Commerce.department(max: 1),
+    name: name,
     description: Faker::Lorem.sentence,
     active: true
   )
@@ -135,9 +129,9 @@ end
 
 sub_categories = []
 main_categories.each do |parent|
-  3.times do
+  3.times do |index|
     sub_categories << Category.create!(
-      name: "#{parent.name} - #{Faker::Commerce.product_name.split.sample}",
+      name: "#{parent.name} - #{Faker::Commerce.product_name.split.sample} #{index + 1}",
       description: Faker::Lorem.sentence,
       active: true,
       parent_category_id: parent.id
@@ -158,7 +152,7 @@ NUM_PRODUCTS.times do
     name: Faker::Commerce.unique.product_name,
     short_description: Faker::Lorem.sentence(word_count: 5),
     description: Faker::Lorem.paragraph,
-    active: true,
+    approval_status: :approved,
     country_origin: COUNTRIES.sample[:code],
     user: creator_user
   )
@@ -179,12 +173,9 @@ NUM_PRODUCTS.times do
       product: product,
       size: variant_size,
       expired_date: Faker::Date.forward(days: 365),
-      unit_price: Faker::Commerce.price(range: 1.0..20.0),
-      dozen_price: Faker::Commerce.price(range: 20.0..100.0),
-      box_price: Faker::Commerce.price(range: 100.0..500.0),
       dozen_units: 12,
       box_units: rand(50..100),
-      status: true,
+      approval_status: :approved,
       views: rand(10..500),
       sales_count: rand(0..100),
       popularity_score: rand(0.0..10.0).round(2)
@@ -201,7 +192,7 @@ suppliers.each do |supplier|
     PriceDetail.create!(
       supplier: supplier,
       product_detail: detail,
-      price: Faker::Commerce.price(range: detail.unit_price * 0.8..detail.unit_price * 0.95),
+      price: Faker::Commerce.price(range: 1.0..50.0),
       quantity_type: :unit,
       currency: 'usd'
     )
@@ -240,7 +231,7 @@ customer_users.each do |user|
       )
     end
     cart_items = Customer::CartItem.where(customer_cart_id: cart.id)
-    cart.update(total_amount: cart_items.sum { |item| item.quantity * item.product_detail.unit_price })
+    cart.update(total_amount: cart_items.sum { |item| item.quantity * (item.product_detail.price_details.unit.first&.price || 0) })
   end
 
   # Individual Orders

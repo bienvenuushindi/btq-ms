@@ -14,22 +14,17 @@ module RequisitionService
     def update_attributes
       @record = @resource.product_detail_requisitions.find_by(product_detail_id: @params[:product_detail_id])
       if @record
+        price_params = RequisitionService::Helper.update_requisition_params(@params)
         @record.decrement_total_price
-        if @record.update(RequisitionService::Helper.update_requisition_params(@params))
-          update_price_detail
+        if @record.update(price_params)
+          update_purchased_count
         end
       end
     end
-
-    private
-    def update_price_detail
-      price_params = RequisitionService::Helper.update_requisition_params(@params)
-      price = price_params[:price]
-      currency = price_params[:currency]
-      supplier_id = price_params[:supplier_id]
-      product_detail_id = @params[:product_detail_id]
-      quantity_type = price_params[:quantity_type]
-      PriceDetail.custom_upsert({ quantity_type => price }, currency, supplier_id, product_detail_id)
+    def update_purchased_count
+      @resource.update!(
+        count_products_bought: @resource.product_detail_requisitions.bought.count
+      )
     end
   end
 

@@ -1,4 +1,5 @@
 class Category < ApplicationRecord
+  include AttachmentUrlHelper
   include PgSearch::Model
   pg_search_scope :search, against: %i[name description], using: { tsearch: { prefix: true } }
   has_many :categorizations
@@ -35,7 +36,7 @@ class Category < ApplicationRecord
   end
 
   def image_url
-    image.attached? ? image.blob.url : default_image_url
+    attachment_url_or_default(image, default_image_url)
   end
 
   def self.tree_structure(parent_id = nil)

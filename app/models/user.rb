@@ -7,6 +7,7 @@ class EmailValidator < ActiveModel::EachValidator
 end
 
 class User < ApplicationRecord
+  include AttachmentUrlHelper
   include Devise::JWT::RevocationStrategies::JTIMatcher
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
@@ -28,7 +29,7 @@ class User < ApplicationRecord
   validates :password, presence: true, length: { minimum: 6 }, on: :create
 
   def image_url
-    image.attached? ? image.blob.url : default_image_url
+    attachment_url_or_default(image, default_image_url)
   end
 
   def default_currency
@@ -41,6 +42,14 @@ class User < ApplicationRecord
       'KE' => 'usd',
       'QA' => 'usd'
     }.fetch(country_code, 'usd')
+  end
+
+  def admin?
+    role&.name.to_s.casecmp('admin').zero?
+  end
+
+  def supplier?
+    role&.name.to_s.casecmp('supplier').zero?
   end
 
   def price_preference_modified

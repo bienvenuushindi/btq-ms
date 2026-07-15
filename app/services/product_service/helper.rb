@@ -6,7 +6,7 @@ module ProductService
     end
 
     def self.product_params(params)
-      params.require(:product).permit(:name, :short_description, :description, :active, :country_origin, :tags, :categories, images: [])
+      params.require(:product).permit(:name, :short_description, :description, :country_origin, :approval_status, :rejection_reason, :catalog_scope, :tags, :categories, images: [])
     end
   end
 end

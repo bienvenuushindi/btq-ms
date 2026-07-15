@@ -5,7 +5,7 @@ module PriceDetailService
     end
 
     def self.price_detail_params(params)
-      params.require(:price_detail).permit(:supplier_id, :currency, :product_detail_id, prices: [:box, :dozen, :unit])
+      params.require(:price_detail).permit(:supplier_id, :currency, :product_detail_id, :supplier_status, prices: [:box, :dozen, :unit])
     end
   end
 

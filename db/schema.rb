@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
+ActiveRecord::Schema[7.0].define(version: 2026_06_30_132000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -206,29 +206,35 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
     t.bigint "product_detail_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "supplier_status", default: true, null: false
     t.index ["product_detail_id"], name: "index_price_details_on_product_detail_id"
     t.index ["supplier_id", "product_detail_id", "quantity_type"], name: "index_unique_price_details", unique: true
     t.index ["supplier_id"], name: "index_price_details_on_supplier_id"
+    t.index ["supplier_status"], name: "index_price_details_on_supplier_status"
   end
 
   create_table "product_details", force: :cascade do |t|
     t.string "size"
     t.date "expired_date"
-    t.decimal "unit_price", default: "0.0"
-    t.decimal "dozen_price", default: "0.0"
-    t.decimal "box_price", default: "0.0"
     t.integer "dozen_units", default: 0
     t.integer "box_units", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "product_id", null: false
     t.boolean "status", default: false
-    t.string "currency", default: "usd"
     t.integer "sales_count", default: 0
     t.integer "views", default: 0
     t.decimal "popularity_score", default: "0.0"
+    t.integer "approval_status", default: 0, null: false
+    t.bigint "submitted_by_id"
+    t.bigint "reviewed_by_id"
+    t.datetime "reviewed_at"
+    t.text "rejection_reason"
     t.index "product_id, lower(btrim((size)::text))", name: "index_product_details_on_product_id_and_normalized_size", unique: true
+    t.index ["approval_status"], name: "index_product_details_on_approval_status"
     t.index ["product_id"], name: "index_product_details_on_product_id"
+    t.index ["reviewed_by_id"], name: "index_product_details_on_reviewed_by_id"
+    t.index ["submitted_by_id"], name: "index_product_details_on_submitted_by_id"
   end
 
   create_table "product_details_requisitions", force: :cascade do |t|
@@ -244,6 +250,8 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "product_detail_id", null: false
+    t.bigint "buyer_supplier_id"
+    t.index ["buyer_supplier_id"], name: "index_product_details_requisitions_on_buyer_supplier_id"
     t.index ["product_detail_id"], name: "index_product_details_requisitions_on_product_detail_id"
     t.index ["requisition_id"], name: "index_product_details_requisitions_on_requisition_id"
     t.index ["supplier_id"], name: "index_product_details_requisitions_on_supplier_id"
@@ -258,7 +266,17 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.integer "approval_status", default: 0, null: false
+    t.bigint "submitted_by_id"
+    t.bigint "reviewed_by_id"
+    t.datetime "reviewed_at"
+    t.text "rejection_reason"
+    t.integer "catalog_scope", default: 0, null: false
+    t.index ["approval_status"], name: "index_products_on_approval_status"
+    t.index ["catalog_scope"], name: "index_products_on_catalog_scope"
     t.index ["name"], name: "index_products_on_name"
+    t.index ["reviewed_by_id"], name: "index_products_on_reviewed_by_id"
+    t.index ["submitted_by_id"], name: "index_products_on_submitted_by_id"
     t.index ["user_id"], name: "index_products_on_user_id"
   end
 
@@ -271,7 +289,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.date "date", default: "2025-12-08"
+    t.date "date", default: "2026-05-10"
     t.index ["archived", "created_at"], name: "index_requisitions_on_archived_and_created_at"
     t.index ["user_id"], name: "index_requisitions_on_user_id"
   end
@@ -280,6 +298,17 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
     t.string "name", default: "", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "supplier_product_details", force: :cascade do |t|
+    t.bigint "supplier_id", null: false
+    t.bigint "product_detail_id", null: false
+    t.boolean "supplier_status", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_detail_id"], name: "index_supplier_product_details_on_product_detail_id"
+    t.index ["supplier_id", "product_detail_id"], name: "index_supplier_product_details_on_supplier_and_detail", unique: true
+    t.index ["supplier_id"], name: "index_supplier_product_details_on_supplier_id"
   end
 
   create_table "suppliers", force: :cascade do |t|
@@ -364,11 +393,18 @@ ActiveRecord::Schema[7.0].define(version: 2026_05_03_145000) do
   add_foreign_key "price_details", "product_details"
   add_foreign_key "price_details", "suppliers"
   add_foreign_key "product_details", "products"
+  add_foreign_key "product_details", "users", column: "reviewed_by_id"
+  add_foreign_key "product_details", "users", column: "submitted_by_id"
   add_foreign_key "product_details_requisitions", "product_details"
   add_foreign_key "product_details_requisitions", "requisitions"
   add_foreign_key "product_details_requisitions", "suppliers"
+  add_foreign_key "product_details_requisitions", "suppliers", column: "buyer_supplier_id"
   add_foreign_key "products", "users"
+  add_foreign_key "products", "users", column: "reviewed_by_id"
+  add_foreign_key "products", "users", column: "submitted_by_id"
   add_foreign_key "requisitions", "users"
+  add_foreign_key "supplier_product_details", "product_details"
+  add_foreign_key "supplier_product_details", "suppliers"
   add_foreign_key "suppliers", "users"
   add_foreign_key "taggings", "tags"
   add_foreign_key "users", "roles"
