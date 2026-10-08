@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  mount Rswag::Api::Engine => '/api-docs'
+  mount Rswag::Ui::Engine => '/api-docs'
   # devise_for :users
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -25,14 +27,14 @@ Rails.application.routes.draw do
       resources :countries, only: [] do
         resources :suppliers, only: [:index]
       end
-      resources :categories, only: [:index, :create, :show, :update] do
+      resources :categories, only: [:index, :create, :show, :update, :destroy] do
         collection do
           get 'tree_structure'
           get 'parents'
         end
       end
       resources :products, only: [] do
-        resources :product_details, only: [:index, :create, :show, :update]
+        resources :product_details, only: [:index, :create, :show, :update, :destroy]
       end
       resources :products, only: [:index, :create, :show, :update]
       resources :supplier_product_details, only: [] do
@@ -55,6 +57,7 @@ Rails.application.routes.draw do
         end
         member do
           get 'suppliers', to: 'product_details#suppliers'
+          get 'available_suppliers', to: 'product_details#available_suppliers'
         end
       end
       resources :requisitions, only: [:index, :create, :show, :update] do
@@ -68,7 +71,11 @@ Rails.application.routes.draw do
           put 'update_products/:product_detail_id', to: 'requisitions#update_products_list'
         end
       end
-      resources :suppliers, only: [:index, :create, :show, :update]
+      resources :suppliers, only: [:index, :create, :show, :update] do
+        member do
+          get 'products'
+        end
+      end
       # resources :addresses, only: [:index, :create, :show]
       resources :users, only: [:index, :show, :update]
       resources :requisition_products, only: [] do

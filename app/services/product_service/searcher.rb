@@ -3,6 +3,8 @@ module ProductService
 class Searcher < BaseService::Searcher
   def initialize(scope, search_params)
     super(scope, search_params)
+    @sort_column = 'name'
+    @sort_direction = 'asc'
   end
 
   protected

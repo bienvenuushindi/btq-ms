@@ -22,7 +22,7 @@ class Category < ApplicationRecord
   scope :active, -> { where(active: true) }
 
   def active_products
-    product_details.where(status: treu)
+    product_details.where(status: true)
   end
 
   # Method to load inactive products

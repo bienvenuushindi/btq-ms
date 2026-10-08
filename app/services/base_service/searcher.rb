@@ -24,7 +24,7 @@ module BaseService
     end
 
     def apply_sorting
-      @scope.order(@sort_column => @sort_direction)
+      @scope = @scope.reorder(@sort_column => @sort_direction, id: :asc)
     end
   end
 end

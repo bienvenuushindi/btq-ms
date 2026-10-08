@@ -1,4 +1,5 @@
 class Supplier < ApplicationRecord
+  attr_accessor :temporary_password
   include AttachmentUrlHelper
   include PgSearch::Model
   pg_search_scope :search, against: %i[shop_name], using: { tsearch: { prefix: true } }
@@ -15,6 +16,15 @@ class Supplier < ApplicationRecord
   belongs_to :user
   acts_as_taggable_on :tags
   validates :shop_name, presence: true
+
+  scope :bought_from_by, lambda { |user|
+    vendor_ids = ProductDetailRequisition.bought
+                                         .where(buyer_supplier_id: user.suppliers.select(:id))
+                                         .where.not(supplier_id: nil)
+                                         .select(:supplier_id)
+
+    where(id: vendor_ids)
+  }
 
   def image_urls
     attachment_urls_or_default(images, default_image_url)

@@ -6,4 +6,5 @@ class SupplierProductDetail < ApplicationRecord
   scope :supplier_inactive, -> { where(supplier_status: false) }
 
   validates :supplier_id, uniqueness: { scope: :product_detail_id }
+  validates :expired_date, presence: true
 end

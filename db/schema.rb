@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_06_30_132000) do
+ActiveRecord::Schema[7.0].define(version: 2026_10_04_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -306,6 +306,8 @@ ActiveRecord::Schema[7.0].define(version: 2026_06_30_132000) do
     t.boolean "supplier_status", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "expired_date", null: false
+    t.index ["expired_date"], name: "index_supplier_product_details_on_expired_date"
     t.index ["product_detail_id"], name: "index_supplier_product_details_on_product_detail_id"
     t.index ["supplier_id", "product_detail_id"], name: "index_supplier_product_details_on_supplier_and_detail", unique: true
     t.index ["supplier_id"], name: "index_supplier_product_details_on_supplier_id"
@@ -362,6 +364,9 @@ ActiveRecord::Schema[7.0].define(version: 2026_06_30_132000) do
     t.datetime "reset_password_sent_at"
     t.datetime "remember_created_at"
     t.string "jti", null: false
+    t.boolean "must_change_password", default: false, null: false
+    t.boolean "active", default: true, null: false
+    t.index ["active"], name: "index_users_on_active"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true

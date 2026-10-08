@@ -1,0 +1,677 @@
+openapi: 3.0.3
+info:
+  title: Tujiunge Management API
+  version: v1
+  description: |
+    REST API for the Tujiunge web and supplier mobile applications.
+    Sign in first, copy the `Authorization` response header, then use the
+    **Authorize** button and enter the complete value (for example `Bearer ey...`).
+servers:
+  - url: http://localhost:3001
+    description: Local development
+  - url: /
+    description: Current server
+tags:
+  - name: Authentication
+  - name: Products
+  - name: Shop
+  - name: Pricing
+  - name: Requisitions
+  - name: Suppliers
+  - name: Categories
+  - name: Metadata
+security:
+  - bearerAuth: []
+paths:
+  /login:
+    post:
+      tags: [Authentication]
+      summary: Sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, password]
+                  properties:
+                    email: { type: string, format: email }
+                    password: { type: string, format: password }
+      responses:
+        '200':
+          description: Signed in. JWT is returned in the Authorization header.
+          headers:
+            Authorization:
+              schema: { type: string }
+              description: Bearer JWT used for authenticated requests.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /logout:
+    delete:
+      tags: [Authentication]
+      summary: Sign out and revoke the current token
+      responses:
+        '200': { description: Signed out }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /signup:
+    post:
+      tags: [Authentication]
+      summary: Register a user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  allOf:
+                    - $ref: '#/components/schemas/UserInput'
+                    - type: object
+                      required: [email, password]
+                      properties:
+                        password: { type: string, minLength: 6 }
+      responses:
+        '201': { description: Registered, content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' } } } }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/check_auth:
+    get:
+      tags: [Authentication]
+      summary: Check the current token
+      responses:
+        '200': { description: Authenticated }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/current_user:
+    get:
+      tags: [Authentication]
+      summary: Get the signed-in user and supplier profile
+      responses:
+        '200': { description: Current user, content: { application/json: { schema: { $ref: '#/components/schemas/UserResponse' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/products:
+    get:
+      tags: [Products]
+      summary: List products visible to the current user
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: status, in: query, schema: { type: string, enum: [active, inactive] } }
+        - { name: category_id, in: query, schema: { type: integer } }
+      responses:
+        '200': { description: Paginated products, content: { application/json: { schema: { $ref: '#/components/schemas/ProductCollection' } } } }
+    post:
+      tags: [Products]
+      summary: Create a product
+      requestBody: { $ref: '#/components/requestBodies/ProductBody' }
+      responses:
+        '201': { description: Product created }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/products/search:
+    get:
+      tags: [Products]
+      summary: Search visible products
+      parameters:
+        - { name: query, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string } }
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Matching products, content: { application/json: { schema: { $ref: '#/components/schemas/ProductCollection' } } } }
+  /api/v1/products/stats:
+    get:
+      tags: [Products]
+      summary: Product counts for the current user
+      responses:
+        '200':
+          description: Status counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      active: { type: integer }
+                      inactive: { type: integer }
+                      market: { type: integer }
+  /api/v1/products/market:
+    get:
+      tags: [Shop]
+      summary: Products and variants not yet selected by the supplier
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Market products, content: { application/json: { schema: { $ref: '#/components/schemas/ProductCollection' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/products/market/search:
+    get:
+      tags: [Shop]
+      summary: Search supplier market products
+      parameters:
+        - { name: query, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Matching market products }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/products/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Products]
+      summary: Get a product with available product details
+      responses:
+        '200': { description: Product, content: { application/json: { schema: { $ref: '#/components/schemas/ProductResponse' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Products]
+      summary: Update a product
+      requestBody: { $ref: '#/components/requestBodies/ProductBody' }
+      responses:
+        '200': { description: Updated product }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/products/{product_id}/product_details:
+    parameters:
+      - { name: product_id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [Products]
+      summary: List product variants
+      responses:
+        '200': { description: Product variants }
+    post:
+      tags: [Products]
+      summary: Create a product variant
+      responses:
+        '201': { description: Variant created }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/products/{product_id}/product_details/{id}:
+    parameters:
+      - { name: product_id, in: path, required: true, schema: { type: integer } }
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Products]
+      summary: Get a product variant
+      responses:
+        '200': { description: Product variant }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Products]
+      summary: Update a product variant
+      responses:
+        '200': { description: Updated variant }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/supplier_product_details/bulk:
+    post:
+      tags: [Shop]
+      summary: Add or update variants in the supplier shop
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shop_selection]
+              properties:
+                shop_selection:
+                  type: object
+                  properties:
+                    product_details:
+                      type: array
+                      items: { $ref: '#/components/schemas/ShopVariantInput' }
+      responses:
+        '200': { description: Shop variants saved }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/supplier_product_details/product/{product_id}:
+    delete:
+      tags: [Shop]
+      summary: Remove a complete product from the supplier shop
+      parameters:
+        - { name: product_id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Product removed }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/supplier_product_details/product_detail/{product_detail_id}:
+    delete:
+      tags: [Shop]
+      summary: Remove one variant from the supplier shop
+      parameters:
+        - { name: product_detail_id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Variant removed }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/product_details/{product_detail_id}/price_details:
+    parameters:
+      - { name: product_detail_id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [Pricing]
+      summary: List prices grouped by supplier
+      responses:
+        '200': { description: Supplier prices }
+    post:
+      tags: [Pricing]
+      summary: Create or update supplier prices for a variant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price_detail: { $ref: '#/components/schemas/PricingInput' }
+      responses:
+        '200': { description: Pricing saved }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/product_details/{product_detail_id}/price_details/supplier/{supplier_id}:
+    delete:
+      tags: [Pricing]
+      summary: Remove all supplier prices for a variant
+      parameters:
+        - { name: product_detail_id, in: path, required: true, schema: { type: integer } }
+        - { name: supplier_id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Pricing removed }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/requisitions:
+    get:
+      tags: [Requisitions]
+      summary: List requisitions visible to the current user
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: status, in: query, schema: { type: string, enum: [archived, not_archived] } }
+      responses:
+        '200': { description: Requisitions, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionCollection' } } } }
+    post:
+      tags: [Requisitions]
+      summary: Create a requisition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requisition:
+                  type: object
+                  required: [date, currency]
+                  properties:
+                    date: { type: string, format: date }
+                    currency: { type: string, example: usd }
+                    product_detail_ids: { type: array, items: { type: integer } }
+      responses:
+        '201': { description: Requisition created }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/requisitions/recent:
+    get:
+      tags: [Requisitions]
+      summary: Get the latest active and archived requisitions
+      responses:
+        '200': { description: Recent requisitions }
+  /api/v1/requisitions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Requisitions]
+      summary: Get a requisition with its visible product items
+      responses:
+        '200': { description: Requisition, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionResponse' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Requisitions]
+      summary: Archive or restore a requisition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requisition:
+                  type: object
+                  properties:
+                    archived: { type: boolean }
+      responses:
+        '200': { description: Requisition updated }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/requisitions/{id}/add_products:
+    post:
+      tags: [Requisitions]
+      summary: Add product variants to a requisition
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requisition:
+                  type: object
+                  properties:
+                    product_detail_ids: { type: array, items: { type: integer } }
+      responses:
+        '201': { description: Products added }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/requisitions/{id}/update_products/{product_detail_id}:
+    put:
+      tags: [Requisitions]
+      summary: Update a requisition product item
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - { name: product_detail_id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requisition_product: { $ref: '#/components/schemas/RequisitionItemInput' }
+      responses:
+        '200': { description: Product item updated }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/requisitions/{id}/product_details/{product_detail_id}/remove_item:
+    delete:
+      tags: [Requisitions]
+      summary: Remove a product item from a requisition
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - { name: product_detail_id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Item removed }
+  /api/v1/suppliers:
+    get:
+      tags: [Suppliers]
+      summary: List suppliers visible to the current user
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Suppliers, content: { application/json: { schema: { $ref: '#/components/schemas/SupplierCollection' } } } }
+    post:
+      tags: [Suppliers]
+      summary: Create a supplier (admin only)
+      responses:
+        '201': { description: Supplier created }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/suppliers/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Suppliers]
+      summary: Get a supplier
+      responses:
+        '200': { description: Supplier }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Suppliers]
+      summary: Update a supplier (admin only)
+      responses:
+        '200': { description: Supplier updated }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/suppliers/search/filter:
+    get:
+      tags: [Suppliers]
+      summary: Search suppliers
+      parameters:
+        - { name: query, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Matching suppliers }
+  /api/v1/categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      responses:
+        '200': { description: Categories }
+    post:
+      tags: [Categories]
+      summary: Create a category
+      responses:
+        '201': { description: Category created }
+  /api/v1/categories/tree_structure:
+    get:
+      tags: [Categories]
+      summary: Get the category tree
+      responses:
+        '200': { description: Category tree }
+  /api/v1/quantity_types:
+    get:
+      tags: [Metadata]
+      summary: List supported quantity types
+      responses:
+        '200': { description: Quantity types }
+  /api/v1/currencies:
+    get:
+      tags: [Metadata]
+      summary: List supported currencies
+      responses:
+        '200': { description: Currencies }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    PageNumber:
+      name: page[number]
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: page[size]
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+  responses:
+    Unauthorized:
+      description: Missing, invalid, or expired JWT
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: The current role cannot perform this action
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Resource not found
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: Validation failed
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  requestBodies:
+    ProductBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              product:
+                type: object
+                properties:
+                  name: { type: string }
+                  description: { type: string }
+                  short_description: { type: string }
+                  category_ids: { type: array, items: { type: integer } }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        message: { type: string }
+        errors: { type: array, items: { type: string } }
+        meta:
+          type: object
+          properties:
+            message: { type: string }
+    Address:
+      type: object
+      properties:
+        address1: { type: string, nullable: true }
+        address2: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        country: { type: string, nullable: true }
+        code: { type: string, nullable: true }
+        tel1: { type: string, nullable: true }
+        tel2: { type: string, nullable: true }
+    UserInput:
+      type: object
+      properties:
+        email: { type: string, format: email }
+        name: { type: string }
+        phone_number: { type: string }
+        role_id: { type: integer }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string, format: email }
+        name: { type: string, nullable: true }
+        phone_number: { type: string, nullable: true }
+        role: { type: string, nullable: true }
+        default_currency: { type: string, example: usd }
+        must_change_password: { type: boolean }
+        supplier: { $ref: '#/components/schemas/Supplier', nullable: true }
+        address: { $ref: '#/components/schemas/Address' }
+    UserResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/User' }
+    Supplier:
+      type: object
+      properties:
+        id: { type: integer }
+        shop_name: { type: string }
+        image_urls: { type: array, items: { type: string } }
+        address: { $ref: '#/components/schemas/Address' }
+    Price:
+      type: object
+      properties:
+        id: { type: integer }
+        price: { type: number, format: float }
+        currency: { type: string, example: usd }
+        quantity_type: { type: string, enum: [box, dozen, unit] }
+        supplier_status: { type: boolean }
+    ProductDetail:
+      type: object
+      properties:
+        id: { type: integer }
+        product_id: { type: integer }
+        size: { type: string }
+        expired_date: { type: string, format: date, nullable: true }
+        box_units: { type: integer, nullable: true }
+        dozen_units: { type: integer, nullable: true }
+        status: { type: boolean }
+        approval_status: { type: string }
+        supplier_status: { type: boolean, nullable: true }
+        shop_prices: { type: array, items: { $ref: '#/components/schemas/Price' } }
+        image_urls: { type: array, items: { type: string } }
+    Product:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        short_description: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        active: { type: boolean }
+        approval_status: { type: string }
+        supplier_status: { type: string, enum: [active, inactive], nullable: true }
+        image_urls: { type: array, items: { type: string } }
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              name: { type: string }
+        product_details: { type: array, items: { $ref: '#/components/schemas/ProductDetail' } }
+    ProductResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Product' }
+    ProductCollection:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+        links: { type: object, additionalProperties: true }
+    PaginationMeta:
+      type: object
+      additionalProperties: true
+    ShopVariantInput:
+      type: object
+      required: [product_detail_id]
+      properties:
+        product_detail_id: { type: integer }
+        currency: { type: string, example: usd }
+        supplier_status: { type: boolean, default: true }
+        prices:
+          type: object
+          properties:
+            box: { type: number }
+            dozen: { type: number }
+            unit: { type: number }
+    PricingInput:
+      type: object
+      required: [supplier_id, product_detail_id, currency, prices]
+      properties:
+        supplier_id: { type: integer }
+        product_detail_id: { type: integer }
+        currency: { type: string, example: usd }
+        supplier_status: { type: boolean, default: true }
+        prices:
+          type: object
+          properties:
+            box: { type: number }
+            dozen: { type: number }
+            unit: { type: number }
+    RequisitionItemInput:
+      type: object
+      properties:
+        price: { type: number }
+        currency: { type: string }
+        status: { oneOf: [{ type: boolean }, { type: string, enum: [pending, purchased] }] }
+        quantity: { type: number }
+        quantity_type: { type: string, enum: [box, dozen, unit] }
+        note: { type: string }
+        supplier_id: { type: integer, nullable: true }
+        expired_date: { type: string, format: date, nullable: true }
+    Requisition:
+      type: object
+      properties:
+        id: { type: integer }
+        date: { type: string, format: date }
+        price_currency: { type: string }
+        archived: { type: boolean }
+        total_price: { type: number }
+        count_products: { type: integer }
+        count_products_bought: { type: integer }
+        product_items: { type: array, items: { type: object, additionalProperties: true } }
+    RequisitionResponse:
+      type: object
+      properties:
+        data: { $ref: '#/components/schemas/Requisition' }
+    RequisitionCollection:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Requisition' } }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+        links: { type: object, additionalProperties: true }
+    SupplierCollection:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Supplier' } }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+        links: { type: object, additionalProperties: true }

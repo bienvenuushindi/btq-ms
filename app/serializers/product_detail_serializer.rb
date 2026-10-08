@@ -32,9 +32,18 @@ class ProductDetailSerializer < Serializer
     selection&.supplier_status
   end
 
-  attribute :shop_prices, if: proc { |_object, params| params&.[](:current_user)&.supplier? } do |object, params|
-    supplier_ids = params[:current_user].suppliers.select(:id)
+  attribute :expired_date do |object, params|
+    ProductDetailSerializer.expiration_for(object, params&.[](:current_user), params&.[](:supplier_shop_id))
+  end
+
+  attribute :shop_prices, if: proc { |_object, params| params&.[](:current_user)&.supplier? || params&.[](:supplier_shop_id).present? } do |object, params|
+    supplier_ids = if params&.[](:supplier_shop_id).present?
+                     [params[:supplier_shop_id]]
+                   else
+                     params[:current_user].suppliers.select(:id)
+                   end
     object.price_details
+      .supplier_active
       .where(supplier_id: supplier_ids)
       .map do |price_detail|
         {
@@ -45,6 +54,12 @@ class ProductDetailSerializer < Serializer
           supplier_status: price_detail.supplier_status
         }
       end
+  end
+
+  attribute :can_delete do |object, params|
+    current_user = params&.[](:current_user)
+    allowed = current_user.present? && (current_user.admin? || object.submitted_by_id == current_user.id)
+    allowed && !object.selected_by_any_shop?
   end
 
   attribute :categories_suppliers do |object|
@@ -69,12 +84,13 @@ class ProductDetailSerializer < Serializer
     object.product.name if object.product
   end
 
-  attribute :expired_status do |object|
-    if object.expired_date.nil?
+  attribute :expired_status do |object, params|
+    effective_expiration = ProductDetailSerializer.expiration_for(object, params&.[](:current_user), params&.[](:supplier_shop_id))
+    if effective_expiration.nil?
       "unknown"
     else
       today = Date.today
-      expired_date = object.expired_date.to_date
+      expired_date = effective_expiration.to_date
 
       if expired_date < today
         "expired"
@@ -91,6 +107,15 @@ class ProductDetailSerializer < Serializer
       return unless current_user&.supplier?
 
       object.supplier_product_details.find_by(supplier_id: current_user.suppliers.select(:id))
+    end
+
+    def expiration_for(object, current_user, supplier_shop_id = nil)
+      selection = if supplier_shop_id.present?
+                    object.supplier_product_details.find_by(supplier_id: supplier_shop_id)
+                  else
+                    supplier_selection(object, current_user)
+                  end
+      selection&.expired_date || object.expired_date
     end
   end
 end

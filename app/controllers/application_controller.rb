@@ -22,6 +22,12 @@ class ApplicationController < ActionController::API
     end
   end
 
+  def require_admin!
+    return if current_user&.admin?
+
+    render json: { error: 'Only admins can perform this action' }, status: :forbidden
+  end
+
   protected
 
   def configure_permitted_parameters

@@ -47,7 +47,7 @@ class Product < ApplicationRecord
   }
   scope :visible_to, lambda { |user|
     if user&.admin?
-      public_reviewable
+      all
     elsif user&.supplier?
       supplier_shop_for(user)
     elsif user
@@ -97,8 +97,14 @@ class Product < ApplicationRecord
       .where(submitted_by_id: user.id)
       .where.not(id: selected_detail_ids)
 
-    active_count = ProductDetail.where(id: active_detail_ids).count + submitted_without_shop_selection.active.count
-    inactive_count = ProductDetail.where(id: inactive_detail_ids).where.not(id: active_detail_ids).count + submitted_without_shop_selection.inactive.count
+    active_variant_count = ProductDetail.where(id: active_detail_ids).count + submitted_without_shop_selection.active.count
+    inactive_variant_count = ProductDetail.where(id: inactive_detail_ids).where.not(id: active_detail_ids).count + submitted_without_shop_selection.inactive.count
+    active_product_ids = ProductDetail.where(id: active_detail_ids)
+                                      .or(ProductDetail.where(submitted_by_id: user.id).active)
+                                      .select(:product_id)
+    shop_products = supplier_shop_for(user)
+    active_count = shop_products.where(id: active_product_ids).distinct.count
+    inactive_count = shop_products.where.not(id: active_product_ids).distinct.count
     market_total_count = ProductDetail.visible_catalog.count
     market_remaining_count = ProductDetail.visible_catalog.where.not(id: selected_detail_ids).count
 
@@ -106,6 +112,9 @@ class Product < ApplicationRecord
       active: active_count,
       inactive: inactive_count,
       total: active_count + inactive_count,
+      active_variants: active_variant_count,
+      inactive_variants: inactive_variant_count,
+      total_variants: active_variant_count + inactive_variant_count,
       market_total: market_total_count,
       market: market_remaining_count
     }

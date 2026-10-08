@@ -14,6 +14,14 @@ module SupplierService
 
     private
 
+    def default_sort_column
+      'shop_name'
+    end
+
+    def default_sort_direction
+      'asc'
+    end
+
     def attach_images_to_result
       @scope.with_attached_images
     end

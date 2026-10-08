@@ -1,6 +1,6 @@
 require "test_helper"
 
-class Customers::PreferencesControllerTest < ActionDispatch::IntegrationTest
+class Api::V1::Customers::PreferencesControllerTest < ActionDispatch::IntegrationTest
   # test "the truth" do
   #   assert true
   # end

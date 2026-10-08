@@ -14,6 +14,14 @@ module ProductService
 
     private
 
+    def default_sort_column
+      'name'
+    end
+
+    def default_sort_direction
+      'asc'
+    end
+
     def apply_category_filter
       category_ids = Array(@params[:category_ids].presence || @params[:category_id]).compact_blank
       return if category_ids.empty?

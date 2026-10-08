@@ -42,6 +42,17 @@ end
     def product_details_for(object, params)
       current_user = params&.[](:current_user)
       details = object.product_details
+      if params&.[](:supplier_shop_id).present?
+        selected_detail_ids = details
+          .joins(:supplier_product_details)
+          .where(supplier_product_details: { supplier_id: params[:supplier_shop_id], supplier_status: true })
+          .select(:id)
+        priced_detail_ids = details
+          .joins(:price_details)
+          .merge(PriceDetail.supplier_active.where(supplier_id: params[:supplier_shop_id]))
+          .select(:id)
+        return details.where(id: selected_detail_ids).or(details.where(id: priced_detail_ids))
+      end
       unless current_user&.supplier?
         return details.merge(ProductDetail.visible_to(current_user))
       end

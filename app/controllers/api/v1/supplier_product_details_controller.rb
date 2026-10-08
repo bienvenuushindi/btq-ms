@@ -39,7 +39,13 @@ class Api::V1::SupplierProductDetailsController < ApplicationController
     product = Product.supplier_shop_for(current_user).find(params[:product_id])
     product_detail_ids = product.product_details.select(:id)
 
-    SupplierProductDetail.where(supplier: supplier, product_detail_id: product_detail_ids).delete_all
+    selections = SupplierProductDetail.where(supplier: supplier, product_detail_id: product_detail_ids)
+    if selections.none? && product.submitted_by_id == current_user.id
+      render json: { error: 'A product you submitted cannot be detached from your catalog' }, status: :unprocessable_entity
+      return
+    end
+
+    selections.delete_all
     PriceDetail.where(supplier: supplier, product_detail_id: product_detail_ids).delete_all
 
     render json: { data: { product_id: product.id, removed: true } }, status: :ok
@@ -61,7 +67,13 @@ class Api::V1::SupplierProductDetailsController < ApplicationController
 
     product_detail = ProductDetail.supplier_shop_for(current_user).find(params[:product_detail_id])
 
-    SupplierProductDetail.where(supplier: supplier, product_detail: product_detail).delete_all
+    selection = SupplierProductDetail.find_by(supplier: supplier, product_detail: product_detail)
+    if selection.nil? && product_detail.submitted_by_id == current_user.id
+      render json: { error: 'A variant you submitted cannot be detached from your catalog' }, status: :unprocessable_entity
+      return
+    end
+
+    selection&.destroy!
     PriceDetail.where(supplier: supplier, product_detail: product_detail).delete_all
 
     render json: { data: { product_detail_id: product_detail.id, removed: true } }, status: :ok
@@ -78,7 +90,7 @@ class Api::V1::SupplierProductDetailsController < ApplicationController
     details.map do |detail_params|
       ActionController::Parameters
         .new(detail_params.respond_to?(:to_unsafe_h) ? detail_params.to_unsafe_h : detail_params.to_h)
-        .permit(:product_detail_id, :currency, :supplier_status, prices: %i[box dozen unit])
+        .permit(:product_detail_id, :currency, :supplier_status, :expired_date, prices: %i[box dozen unit])
         .to_h
         .with_indifferent_access
     end
@@ -93,6 +105,7 @@ class Api::V1::SupplierProductDetailsController < ApplicationController
       product_detail: product_detail
     )
     selection.supplier_status = ActiveModel::Type::Boolean.new.cast(supplier_status)
+    selection.expired_date = detail_params[:expired_date].presence || selection.expired_date || product_detail.expired_date
     selection.save!
 
     prices = detail_params.fetch(:prices, {}).to_h.compact_blank
@@ -107,6 +120,7 @@ class Api::V1::SupplierProductDetailsController < ApplicationController
     {
       product_detail_id: product_detail.id,
       supplier_status: selection.supplier_status,
+      expired_date: selection.expired_date,
       prices_count: prices.count
     }
   end

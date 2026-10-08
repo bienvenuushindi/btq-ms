@@ -17,18 +17,17 @@
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   if Rails.env.development?
-    origins = %w[
-      localhost:3000
-      localhost:3001
-      localhost:5000
-      127.0.0.1:3000
-      127.0.0.1:3001
-      127.0.0.1:5000
-      192.168.70.49:8081
-      www.xyz.com
+    # Allow local web clients and Expo web running over a private LAN/hotspot.
+    # The port is intentionally flexible because Metro may move from 8081 when
+    # another development server is already running.
+    development_origins = [
+      %r{\Ahttps?://(?:localhost|127\.0\.0\.1)(?::\d+)?\z},
+      %r{\Ahttps?://192\.168\.\d{1,3}\.\d{1,3}(?::\d+)?\z},
+      %r{\Ahttps?://10\.\d{1,3}\.\d{1,3}\.\d{1,3}(?::\d+)?\z},
+      %r{\Ahttps?://172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}(?::\d+)?\z}
     ].freeze
     allow do
-      origins origins
+      origins(*development_origins)
       resource '*',
                headers: :any,
                expose: ["Authorization"],

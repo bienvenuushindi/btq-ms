@@ -52,6 +52,14 @@ class User < ApplicationRecord
     role&.name.to_s.casecmp('supplier').zero?
   end
 
+  def active_for_authentication?
+    super && active?
+  end
+
+  def inactive_message
+    active? ? super : :inactive
+  end
+
   def price_preference_modified
     customer_price_preference.price_types.map { |type| "#{type}_price" }
   end

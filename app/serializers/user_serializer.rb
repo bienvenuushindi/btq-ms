@@ -1,5 +1,5 @@
 class UserSerializer < Serializer
-  attributes :id, :email, :name, :phone_number, :image_url, :default_currency
+  attributes :id, :email, :name, :phone_number, :image_url, :default_currency, :must_change_password
 
   attribute :role do |object|
     object.role&.name

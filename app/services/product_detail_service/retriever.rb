@@ -14,12 +14,12 @@ module ProductDetailService
     end
 
     def self.expired_soon(params, scope = ProductDetail.all)
-       scope = scope.details_with_product_name.sc_expired_soon
+       scope = scope.details_with_product_name.sc_expired_soon.reorder(expired_date: :asc, id: :asc)
        params[:limit].present? ? scope.limit(params[:limit]) : scope
     end
 
     def self.expired(params, scope = ProductDetail.all)
-       scope = scope.details_with_product_name.sc_expired
+       scope = scope.details_with_product_name.sc_expired.reorder(expired_date: :asc, id: :asc)
        params[:limit].present? ? scope.limit(params[:limit]) : scope
     end
 

@@ -1,4 +1,5 @@
 class Api::V1::RolesController < ApplicationController
+  before_action :require_admin!, only: :create
   before_action -> { find_record(Role) }, only: %i[show]
 
   def index

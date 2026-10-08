@@ -44,7 +44,7 @@ class ProductDetail < ApplicationRecord
   }
   scope :visible_to, lambda { |user|
     if user&.admin?
-      joins(:product).merge(Product.public_reviewable)
+      all
     elsif user&.supplier?
       supplier_ids = user.suppliers.select(:id)
       selected_product_detail_ids = PriceDetail
@@ -151,6 +151,10 @@ class ProductDetail < ApplicationRecord
             'addresses.phone_number2 as tel2'
           )
           .order('suppliers.id', 'price_details.updated_at DESC')
+  end
+
+  def selected_by_any_shop?
+    supplier_product_details.exists? || price_details.exists?
   end
   def calculate_popularity_score
     ratings_score = customer_ratings.average(:score) || 0

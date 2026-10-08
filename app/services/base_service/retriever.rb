@@ -18,9 +18,17 @@ module BaseService
     end
 
     def apply_sorting
-      sort_column = @sort_column.include?(@params[:sort]) ? @params[:sort] : 'created_at'
-      sort_direction = @sort_direction.include?(@params[:direction]) ? @params[:direction] : 'desc'
-      @scope = @scope.reorder(sort_column => sort_direction)
+      sort_column = @sort_column.include?(@params[:sort]) ? @params[:sort] : default_sort_column
+      sort_direction = @sort_direction.include?(@params[:direction]) ? @params[:direction] : default_sort_direction
+      @scope = @scope.reorder(sort_column => sort_direction, id: :asc)
+    end
+
+    def default_sort_column
+      'created_at'
+    end
+
+    def default_sort_direction
+      'desc'
     end
   end
 end

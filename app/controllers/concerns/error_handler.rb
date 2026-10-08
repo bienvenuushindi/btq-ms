@@ -5,6 +5,7 @@ module ErrorHandler
   included do
     rescue_from ActiveRecord::RecordInvalid, with: :record_invalid
     rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
+    rescue_from ActiveStorage::IntegrityError, with: :storage_error
     rescue_from StandardError, with: :handle_unexpected_error
   end
 
@@ -16,6 +17,11 @@ module ErrorHandler
   def record_not_found(exception)
     model_name = exception.model.constantize.model_name.human
     render json: { "#{model_name}": nil }, status: :not_found
+  end
+
+  def storage_error(exception)
+    Rails.logger.error("Image storage error: #{exception.message}")
+    render json: { error: 'The image could not be stored. Please try again or contact an administrator.' }, status: :service_unavailable
   end
 
   def handle_unexpected_error(exception)

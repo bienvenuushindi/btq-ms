@@ -1,4 +1,5 @@
 class Api::V1::CategoriesController < ApplicationController
+  before_action :require_admin!, only: %i[create update destroy]
   before_action :find_category, only: %i[show destroy update]
 
   def index
@@ -16,7 +17,7 @@ class Api::V1::CategoriesController < ApplicationController
   end
 
   def update
-    if CategoryService::Updater.call(@category, product_params)
+    if CategoryService::Updater.call(@category, category_params)
       render json: serialize_resource(@category, serializer), status: :ok
     else
       render json: error_response(@category, 'Failed to update the product'), status: :unprocessable_entity
@@ -24,7 +25,12 @@ class Api::V1::CategoriesController < ApplicationController
   end
 
   def destroy
-    @category.destroy
+    if @category.children.exists? || @category.categorizations.exists? || @category.customer_preferences.exists?
+      render json: { error: 'Category cannot be deleted while it is in use' }, status: :unprocessable_entity
+      return
+    end
+
+    @category.destroy!
     head :no_content
   end
 

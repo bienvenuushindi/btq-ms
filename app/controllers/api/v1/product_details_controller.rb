@@ -1,5 +1,5 @@
 class Api::V1::ProductDetailsController < ApplicationController
-  before_action :set_product_detail, only: %i[show update]
+  before_action :set_product_detail, only: %i[show update destroy]
   before_action :set_product, only: %i[index]
 
   def index
@@ -34,6 +34,12 @@ class Api::V1::ProductDetailsController < ApplicationController
   end
 
   def create
+    product = Product.find(params[:product_id])
+    if current_user.supplier? && product.submitted_by_id != current_user.id
+      render json: { error: 'Suppliers can only add variants to products they created' }, status: :forbidden
+      return
+    end
+
     @product_detail = ProductDetailService::Creator.call(product_detail_params.merge(product_id: params[:product_id]), current_user)
     render_serialized_resource(@product_detail, serializer, :created, serializer_options)
   end
@@ -48,6 +54,21 @@ class Api::V1::ProductDetailsController < ApplicationController
     }, status: :ok
   end
 
+  def available_suppliers
+    product_detail = ProductDetail.visible_to(current_user).find(params[:id])
+    available_suppliers = Supplier
+      .joins(:price_details)
+      .merge(PriceDetail.supplier_active.where(product_detail_id: product_detail.id))
+      .distinct
+      .order(:shop_name)
+
+    render json: serialize_resources(
+      available_suppliers,
+      SupplierSerializer,
+      params: { product_detail_id: product_detail.id }
+    ), status: :ok
+  end
+
   def show
     render json: serialize_resource(
       @product_detail,
@@ -57,11 +78,33 @@ class Api::V1::ProductDetailsController < ApplicationController
   end
 
   def update
+    unless current_user.admin? || @product_detail.submitted_by_id == current_user.id
+      render json: { error: 'You can only edit variants that you created' }, status: :forbidden
+      return
+    end
+
     if ProductDetailService::Updater.call(@product_detail, product_detail_params, current_user)
       render json: serialize_resource(@product_detail, serializer, serializer_options), status: :ok
     else
       render json: error_response(@product_detail), status: :unprocessable_entity
     end
+  end
+
+  def destroy
+    unless current_user.admin? || @product_detail.submitted_by_id == current_user.id
+      render json: { error: 'You can only delete variants that you created' }, status: :forbidden
+      return
+    end
+
+    if @product_detail.selected_by_any_shop?
+      render json: { error: 'This variant cannot be deleted because a supplier shop has selected it' }, status: :conflict
+      return
+    end
+
+    @product_detail.destroy!
+    head :no_content
+  rescue ActiveRecord::InvalidForeignKey
+    render json: { error: 'This variant cannot be deleted because it is already used by another record' }, status: :conflict
   end
 
   private

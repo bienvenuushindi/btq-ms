@@ -17,7 +17,12 @@ module AttachmentUrlHelper
   end
 
   def safe_attachment_url(attachment)
-    attachment.blob.url
+    if attachment.blob.service_name.to_s == 'local'
+      options = Rails.application.config.action_mailer.default_url_options || {}
+      Rails.application.routes.url_helpers.rails_blob_url(attachment, **options)
+    else
+      attachment.blob.url
+    end
   rescue StandardError => error
     Rails.logger.warn(
       "Unable to generate attachment URL for #{attachment.record.class.name}##{attachment.record.id}: #{error.message}"

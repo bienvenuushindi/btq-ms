@@ -45,16 +45,24 @@ class Api::V1::UsersController < ApplicationController
       :tel2,
       :country_id,
       :country_name,
+      :password,
+      :password_confirmation,
       images: []
     )
   end
 
   def update_user_record!
-    @user.update!(
+    attributes = {
       name: user_params[:name],
       email: user_params[:email],
       phone_number: user_params[:phone_number].presence || user_params[:tel1]
-    )
+    }
+    if user_params[:password].present?
+      attributes[:password] = user_params[:password]
+      attributes[:password_confirmation] = user_params[:password_confirmation]
+      attributes[:must_change_password] = false
+    end
+    @user.update!(attributes)
   end
 
   def update_user_address!

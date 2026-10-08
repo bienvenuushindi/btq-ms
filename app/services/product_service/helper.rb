@@ -2,7 +2,7 @@
 module ProductService
   module Helper
     def self.search_options
-      { fields: { product: %i[name details] } }
+      { fields: { product: %i[id name details] } }
     end
 
     def self.product_params(params)

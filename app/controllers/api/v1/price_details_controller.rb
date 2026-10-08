@@ -5,7 +5,21 @@ class Api::V1::PriceDetailsController < ApplicationController
   end
 
   def create
-    result = PriceDetailService::Creator.call(price_detail_params)
+    permitted = price_detail_params
+    supplier = Supplier.find(permitted[:supplier_id])
+    if current_user.supplier? && !current_user.suppliers.where(id: supplier.id).exists?
+      render json: { error: 'You can only update pricing for your own shop' }, status: :forbidden
+      return
+    end
+
+    product_detail = ProductDetail.visible_to(current_user).find(permitted[:product_detail_id])
+    result = SupplierProductDetail.transaction do
+      selection = SupplierProductDetail.find_or_initialize_by(supplier: supplier, product_detail: product_detail)
+      selection.supplier_status = ActiveModel::Type::Boolean.new.cast(permitted.fetch(:supplier_status, true))
+      selection.expired_date = permitted[:expired_date].presence || selection.expired_date || product_detail.expired_date
+      selection.save!
+      PriceDetailService::Creator.call(permitted)
+    end
     if result.respond_to?(:errors) && result.errors.any?
       render json: error_response(result), status: :unprocessable_entity
       return

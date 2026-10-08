@@ -56,5 +56,7 @@ gem 'jsom-pagination'
 gem 'cloudinary'
 gem 'acts-as-taggable-on', '~> 9.0'
 gem 'faker', '~> 2.21'
+gem 'rswag-api', '~> 2.17'
+gem 'rswag-ui', '~> 2.17'
 # gem 'active_model_serializers'
 # gem "devise-jwt-cookies",  github: "bienvenuushindi/devise-jwt-cookie"

@@ -263,6 +263,12 @@ GEM
     responders (3.2.0)
       actionpack (>= 7.0)
       railties (>= 7.0)
+    rswag-api (2.17.0)
+      activesupport (>= 5.2, < 8.2)
+      railties (>= 5.2, < 8.2)
+    rswag-ui (2.17.0)
+      actionpack (>= 5.2, < 8.2)
+      railties (>= 5.2, < 8.2)
     securerandom (0.4.1)
     spring (4.4.0)
     stringio (3.1.9)
@@ -304,6 +310,8 @@ DEPENDENCIES
   puma (~> 5.0)
   rack-cors
   rails (~> 7.0.5)
+  rswag-api (~> 2.17)
+  rswag-ui (~> 2.17)
   spring
   tzinfo-data
 

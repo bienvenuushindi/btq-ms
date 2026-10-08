@@ -41,7 +41,9 @@ module UtilitiesHelper
 
     # Purge images that were not kept
     images_to_purge = model_instance.images.reject do |attachment|
-      existing_images.any? { |item| item.include?(attachment_blob_url(attachment)) }
+      existing_images.any? do |item|
+        item.include?(attachment.blob.key) || item.include?(attachment.filename.to_s)
+      end
     end
 
     images_to_purge.each(&:purge)
@@ -51,8 +53,4 @@ module UtilitiesHelper
     end
   end
 
-  def attachment_blob_url(attachment)
-    # Rails.application.routes.url_helpers.rails_blob_path(attachment, only_path: true)
-    attachment.blob.url
-  end
 end
