@@ -28,6 +28,7 @@ module ProductService
         active: @current_user.admin?,
         catalog_scope: catalog_scope,
         country_origin: @params[:country_origin],
+        expirable: @params.key?(:expirable) ? ActiveModel::Type::Boolean.new.cast(@params[:expirable]) : true,
         submitted_by: @current_user,
         reviewed_by: (@current_user if @current_user.admin?),
         reviewed_at: (@current_user.admin? ? Time.current : nil),

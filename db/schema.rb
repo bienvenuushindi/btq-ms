@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2026_10_04_010000) do
+ActiveRecord::Schema[7.0].define(version: 2026_10_29_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -272,6 +272,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_10_04_010000) do
     t.datetime "reviewed_at"
     t.text "rejection_reason"
     t.integer "catalog_scope", default: 0, null: false
+    t.boolean "expirable", default: true, null: false
     t.index ["approval_status"], name: "index_products_on_approval_status"
     t.index ["catalog_scope"], name: "index_products_on_catalog_scope"
     t.index ["name"], name: "index_products_on_name"
@@ -290,6 +291,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_10_04_010000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.date "date", default: "2026-05-10"
+    t.jsonb "exchange_rates", default: {}, null: false
     t.index ["archived", "created_at"], name: "index_requisitions_on_archived_and_created_at"
     t.index ["user_id"], name: "index_requisitions_on_user_id"
   end
@@ -306,7 +308,7 @@ ActiveRecord::Schema[7.0].define(version: 2026_10_04_010000) do
     t.boolean "supplier_status", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.date "expired_date", null: false
+    t.date "expired_date"
     t.index ["expired_date"], name: "index_supplier_product_details_on_expired_date"
     t.index ["product_detail_id"], name: "index_supplier_product_details_on_product_detail_id"
     t.index ["supplier_id", "product_detail_id"], name: "index_supplier_product_details_on_supplier_and_detail", unique: true
@@ -366,6 +368,8 @@ ActiveRecord::Schema[7.0].define(version: 2026_10_04_010000) do
     t.string "jti", null: false
     t.boolean "must_change_password", default: false, null: false
     t.boolean "active", default: true, null: false
+    t.datetime "terms_accepted_at"
+    t.string "terms_version"
     t.index ["active"], name: "index_users_on_active"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true

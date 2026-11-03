@@ -36,6 +36,7 @@ class Api::V1::RequisitionsController < ApplicationController
 
   def update
     if @requisition.update(requisition_update_params)
+      @requisition.recalculate_purchased_total_price! if params.dig(:requisition, :exchange_rates).present?
       render json: serialize_resource(@requisition, serializer, serializer_options), status: :ok
     else
       render json: error_response(@requisition, 'Failed to update requisition. ' + @requisition.errors.full_messages.to_sentence), status: :unprocessable_entity
@@ -85,7 +86,7 @@ class Api::V1::RequisitionsController < ApplicationController
   end
 
   def requisition_update_params
-    params.require(:requisition).permit(:archived)
+    params.require(:requisition).permit(:archived, exchange_rates: {})
   end
 
   def requisition_params

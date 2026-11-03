@@ -16,10 +16,13 @@ module ProductService
 
     def update_attributes
       attributes_to_update.each do |attribute_name|
+        next unless @params.key?(attribute_name)
+
         update_attribute(@resource, attribute_name, @params[attribute_name])
       end
+      update_admin_visibility
       update_approval_status
-      add_categories(@resource, @params)
+      add_categories(@resource, @params) if @params.key?(:categories)
     end
 
     def attributes_to_update
@@ -37,6 +40,16 @@ module ProductService
         @resource.reject!(@current_user, @params[:rejection_reason])
       else
         update_attribute(@resource, :approval_status, @params[:approval_status])
+      end
+    end
+
+    def update_admin_visibility
+      return unless @current_user&.admin?
+
+      %i[active catalog_scope].each do |attribute_name|
+        next unless @params.key?(attribute_name)
+
+        update_attribute(@resource, attribute_name, @params[attribute_name])
       end
     end
   end

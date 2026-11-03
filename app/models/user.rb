@@ -7,6 +7,7 @@ class EmailValidator < ActiveModel::EachValidator
 end
 
 class User < ApplicationRecord
+  TERMS_VERSION = '1.0.0'
   include AttachmentUrlHelper
   include Devise::JWT::RevocationStrategies::JTIMatcher
   # Include default devise modules. Others available are:

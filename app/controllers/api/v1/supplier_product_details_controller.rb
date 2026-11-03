@@ -105,7 +105,9 @@ class Api::V1::SupplierProductDetailsController < ApplicationController
       product_detail: product_detail
     )
     selection.supplier_status = ActiveModel::Type::Boolean.new.cast(supplier_status)
-    selection.expired_date = detail_params[:expired_date].presence || selection.expired_date || product_detail.expired_date
+    selection.expired_date = if product_detail.product.expirable?
+                               detail_params[:expired_date].presence || selection.expired_date || product_detail.expired_date
+                             end
     selection.save!
 
     prices = detail_params.fetch(:prices, {}).to_h.compact_blank

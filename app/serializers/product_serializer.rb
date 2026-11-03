@@ -1,7 +1,7 @@
 class ProductSerializer < Serializer
   has_many :product_details
   has_many :tags
-  attributes :id, :name, :short_description, :description, :active, :approval_status, :rejection_reason, :catalog_scope, :country_origin, :updated_at, :image_urls
+  attributes :id, :name, :short_description, :description, :active, :approval_status, :rejection_reason, :catalog_scope, :country_origin, :expirable, :updated_at, :image_urls
   attribute :details do |object, params|
     product_details_for(object, params)
       .select("product_details.id, product_details.size")

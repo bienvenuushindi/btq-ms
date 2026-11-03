@@ -15,6 +15,7 @@ module RequisitionService
       @record = @resource.product_detail_requisitions.find_by(product_detail_id: @params[:product_detail_id])
       if @record
         price_params = RequisitionService::Helper.update_requisition_params(@params)
+        price_params[:expired_date] = nil unless @record.product_detail.product.expirable?
         @record.decrement_total_price
         if @record.update(price_params)
           update_purchased_count

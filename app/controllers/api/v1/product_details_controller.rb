@@ -127,7 +127,11 @@ class Api::V1::ProductDetailsController < ApplicationController
   end
 
   def shelf_life_scope
-    current_user.supplier? ? ProductDetail.supplier_shop_for(current_user) : ProductDetail.visible_to(current_user)
+    scope = current_user.supplier? ? ProductDetail.supplier_shop_for(current_user) : ProductDetail.visible_to(current_user)
+    if params[:category_id].present?
+      scope = scope.where(product_id: Product.joins(:categories).where(categories: { id: params[:category_id] }).select(:id))
+    end
+    scope
   end
 
   def set_product_detail

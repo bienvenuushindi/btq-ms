@@ -3,10 +3,8 @@
 #
 
 # --- Configuration ---
-NUM_USERS = 50
-NUM_SUPPLIERS = 10
-NUM_PRODUCTS = 100
-PRODUCTS_PER_SUPPLIER = 5
+NUM_PRODUCTS = 500
+require_relative 'seeds/catalog_data'
 puts "🧹 Cleaning up existing data..."
 ActiveRecord::Base.connection.disable_referential_integrity do
   [
@@ -14,7 +12,7 @@ ActiveRecord::Base.connection.disable_referential_integrity do
     Customer::IndividualOrder, Customer::CartItem, Customer::Cart, Customer::Review,
     Customer::Rating, Customer::PricePreference, Customer::Preference, Address, Category,
     Categorization, Country, PriceDetail, ProductDetailRequisition, ProductDetail, Product,
-    Requisition, Role, Supplier, Tag, User
+    Requisition, Supplier, Tag
   ].each do |model|
     model.delete_all
   rescue ActiveRecord::StatementInvalid => e
@@ -27,91 +25,57 @@ puts "--------------------------------------------------"
 
 # --- 1. Roles ---
 puts "⚙️ Creating Roles..."
-Role.create!([
-  { name: 'Admin' },
-  { name: 'Supplier' },
-  { name: 'Customer' }
-])
-admin_role = Role.find_by(name: 'Admin')
-supplier_role = Role.find_by(name: 'Supplier')
-customer_role = Role.find_by(name: 'Customer')
+admin_role = Role.find_or_create_by!(name: 'Admin')
+supplier_role = Role.find_or_create_by!(name: 'Supplier')
+customer_role = Role.find_or_create_by!(name: 'Customer')
 puts "✅ Roles created: Admin, Supplier, Customer"
 
 # --- 2. Countries ---
 puts "🌍 Creating Countries..."
 COUNTRIES = [
-  { name: 'United States', code: 'US' },
-  { name: 'Canada', code: 'CA' },
-  { name: 'Mexico', code: 'MX' },
-  { name: 'Congo, DR', code: 'CD' }
+  { name: 'Democratic Republic of the Congo', code: 'CD' },
+  { name: 'Republic of the Congo', code: 'CG' },
+  { name: 'Rwanda', code: 'RW' },
+  { name: 'Uganda', code: 'UG' },
+  { name: 'Zambia', code: 'ZM' }
 ]
-Country.create!(COUNTRIES)
-us_country = Country.find_by(code: 'US')
+COUNTRIES.each { |attributes| Country.find_or_create_by!(code: attributes[:code]) { |country| country.name = attributes[:name] } }
+us_country = Country.find_by!(code: 'CD')
 puts "✅ Countries created."
 
 # --- 3. Users ---
-puts "🧑‍💻 Creating Users..."
-users = []
-
-# Admin User
-users << User.create!(
-  name: 'Admin User',
-  email: 'admin@example.com',
-  phone_number: '1111111111',
-  password: 'password',
-  role: admin_role
-)
-
-# Supplier Users
-NUM_SUPPLIERS.times do |i|
-  users << User.create!(
-    name: Faker::Company.name,
-    email: "supplier#{i}@example.com",
-    phone_number: Faker::Number.unique.number(digits: 10),
-    password: 'password',
-    role: supplier_role
-  )
-end
-
-# Customer Users
-(NUM_USERS - NUM_SUPPLIERS - 1).times do |i|
-  users << User.create!(
-    name: Faker::Name.name,
-    email: "customer#{i}@example.com",
-    phone_number: Faker::Number.unique.number(digits: 10),
-    password: 'password',
-    role: customer_role
-  )
-end
+puts "🧑‍💻 Keeping existing Users..."
+users = User.includes(:role).to_a
 puts "✅ Created #{users.count} Users."
 
 # --- 4. Suppliers & Addresses ---
 puts "🏢 Creating Suppliers and Addresses..."
 suppliers = []
+shop_names = ['Marché Central Wholesale', 'Ngaliema Cash & Carry', 'Mama Nshiku General Store', 'Kintambo Foods & Home', 'Matonge Trading House', 'Gombe Family Market', 'Bandalungwa Wholesale Depot', 'Limete Fresh & Grocery', 'Barumbu Essentials Shop', 'Masina Community Market']
 users.select { |u| u.role.name == 'Supplier' }.each do |user|
   supplier = Supplier.create!(
     user: user,
-    shop_name: Faker::Company.name + ' Shop'
+    shop_name: shop_names[suppliers.length % shop_names.length]
   )
   suppliers << supplier
   # Supplier Address
   Address.create!(
     addressable: supplier,
     country: us_country,
-    line1: Faker::Address.street_address,
-    city: Faker::Address.city,
-    phone_number1: Faker::PhoneNumber.phone_number
+    line1: ["Avenue du Commerce #{100 + supplier.id}", "Boulevard du 30 Juin #{100 + supplier.id}"].sample,
+    city: 'Kinshasa',
+    phone_number1: "+243 81 #{format('%03d', supplier.id % 1000)} #{format('%04d', (supplier.id * 37) % 10_000)}"
   )
 end
 
 # Customer Addresses
-users.select { |u| u.role.name == 'Customer' }.sample(NUM_USERS / 5).each do |user|
+users.select { |u| u.role.name == 'Customer' }.sample([users.count { |user| user.role.name == 'Customer' } / 5, 1].max).each do |user|
   Address.create!(
     addressable: user,
     country: us_country,
-    line1: Faker::Address.street_address,
-    city: Faker::Address.city,
-    phone_number1: Faker::PhoneNumber.phone_number
+    line1: "Avenue des Écoles #{100 + user.id}",
+    city: 'Kinshasa',
+    phone_number1: "+243 82 #{format('%03d', user.id % 1000)} #{format('%04d', (user.id * 53) % 10_000)}"
   )
 end
 puts "✅ Created #{suppliers.count} Suppliers and multiple Addresses."
@@ -119,26 +83,19 @@ puts "✅ Created #{suppliers.count} Suppliers and multiple Addresses."
 # --- 5. Categories ---
 puts "🏷️ Creating Categories..."
 main_categories = []
-%w[Beauty Electronics Fashion Home Grocery].each do |name|
+[
+  'Rice, grains & flour', 'Cooking essentials', 'Canned & preserved foods', 'Beverages',
+  'Dairy, eggs & chilled', 'Snacks & confectionery', 'Personal care', 'Household cleaning',
+  'Baby care', 'Fresh produce'
+].each do |name|
   main_categories << Category.create!(
     name: name,
-    description: Faker::Lorem.sentence,
+    description: "Everyday #{name.downcase} stocked by neighborhood shops in Kinshasa.",
     active: true
   )
 end
 
-sub_categories = []
-main_categories.each do |parent|
-  3.times do |index|
-    sub_categories << Category.create!(
-      name: "#{parent.name} - #{Faker::Commerce.product_name.split.sample} #{index + 1}",
-      description: Faker::Lorem.sentence,
-      active: true,
-      parent_category_id: parent.id
-    )
-  end
-end
-all_categories = main_categories + sub_categories
+all_categories = main_categories
 puts "✅ Created #{all_categories.count} Categories."
 
 # --- 6. Products & ProductDetails ---
@@ -146,59 +103,94 @@ puts "📦 Creating Products and Product Details..."
 products = []
 product_details = []
 
-NUM_PRODUCTS.times do
-  creator_user = users.select { |u| u.role.name != 'Customer' }.sample
+creator_users = users.reject { |user| user.role.name.casecmp('Customer').zero? }
+raise 'At least one admin or supplier user is required to own the catalog.' if creator_users.empty?
+
+catalog_rows = CATALOG_PRODUCTS.flat_map do |category_name, names|
+  sizes = PACK_SIZES.fetch(category_name)
+  names.each_with_index.map do |base_name, base_index|
+      {category: category_name, category_index: CATALOG_PRODUCTS.keys.index(category_name), name: "#{base_name} #{sizes[base_index % sizes.length]}", base_index: base_index, pack_index: base_index % sizes.length}
+  end
+end
+raise "Catalog must contain exactly #{NUM_PRODUCTS} named products (got #{catalog_rows.length})." unless catalog_rows.length == NUM_PRODUCTS
+
+catalog_rows.each_with_index do |row, index|
+  category = main_categories.find { |item| item.name == row[:category] }
+  creator_user = creator_users[index % creator_users.length]
   product = Product.create!(
-    name: Faker::Commerce.unique.product_name,
-    short_description: Faker::Lorem.sentence(word_count: 5),
-    description: Faker::Lorem.paragraph,
+    name: row[:name],
+    short_description: "#{row[:category]} · #{row[:name].split.last(2).join(' ')} retail pack",
+    description: "Retail and wholesale stock item for neighborhood shops. Pack: #{row[:name].split.last(2).join(' ')}. Store according to the manufacturer’s instructions and check the lot date on receipt.",
     approval_status: :approved,
-    country_origin: COUNTRIES.sample[:code],
-    user: creator_user
+    catalog_scope: :public_catalog,
+    country_origin: %w[CD CG RW UG ZM][index % 5],
+    user: creator_user,
+    submitted_by: creator_user,
+    reviewed_by: users.find { |user| user.role.name.casecmp('Admin').zero? },
+    reviewed_at: Time.current
   )
   products << product
+  Categorization.create!(categorizable: product, category: category)
 
-  # Add categorization
-  product_categories = all_categories.sample(rand(1..3))
-  product_categories.each do |cat|
-    Categorization.create!(
-      categorizable: product,
-      category: cat
-    )
-  end
-
-  # Create multiple product details (variants) with unique sizes per product
-  ['Small', 'Medium', 'Large', 'One Size'].sample(3).each do |variant_size|
-    detail = ProductDetail.create!(
-      product: product,
-      size: variant_size,
-      expired_date: Faker::Date.forward(days: 365),
-      dozen_units: 12,
-      box_units: rand(50..100),
-      approval_status: :approved,
-      views: rand(10..500),
-      sales_count: rand(0..100),
-      popularity_score: rand(0.0..10.0).round(2)
-    )
-    product_details << detail
-  end
+  # Keep a visible mix of already-expired, near-expiry, and healthy lots for QA.
+  expiry_date = case index % 20
+                when 0 then Date.current - rand(1..45)
+                when 1 then Date.current + rand(1..45)
+                else Date.current + rand(120..540)
+                end
+  detail = ProductDetail.create!(
+    product: product,
+    size: 'Retail pack',
+    expired_date: expiry_date,
+    dozen_units: 12,
+    box_units: [6, 12, 24].sample,
+    approval_status: :approved,
+    status: true,
+    views: 10 + (index * 17 % 990),
+    sales_count: index * 13 % 200
+  )
+  product_details << detail
 end
 puts "✅ Created #{products.count} Products and #{product_details.count} Product Details."
 
 # --- 7. PriceDetails ---
 puts "💰 Creating Price Details (Supplier Pricing)..."
-suppliers.each do |supplier|
-  product_details.sample(PRODUCTS_PER_SUPPLIER).each do |detail|
-    PriceDetail.create!(
+raise 'Create at least one supplier user before seeding product prices.' if suppliers.empty?
+product_details.each_with_index do |detail, index|
+  category_index = catalog_rows[index][:category_index]
+  unit_price = (1.25 + (category_index * 0.85) + ((index * 19) % 240) / 10.0).round(2)
+  selected_suppliers = [suppliers[index % suppliers.length]]
+  selected_suppliers << suppliers[(index * 7 + 3) % suppliers.length] if suppliers.length > 1 && index % 3 != 0
+  selected_suppliers.uniq.each_with_index do |supplier, supplier_index|
+    currency = supplier.country&.code == 'CD' ? 'fc' : 'usd'
+    SupplierProductDetail.create!(
       supplier: supplier,
       product_detail: detail,
-      price: Faker::Commerce.price(range: 1.0..50.0),
-      quantity_type: :unit,
-      currency: 'usd'
+      supplier_status: index % 17 != 0,
+      expired_date: detail.expired_date
     )
+    {unit: unit_price * (supplier_index.zero? ? 1 : 1.08), dozen: unit_price * 11, box: unit_price * detail.box_units}.each do |quantity_type, price|
+      PriceDetail.create!(
+        supplier: supplier,
+        product_detail: detail,
+        price: price.round(2),
+        quantity_type: quantity_type,
+        currency: currency,
+        supplier_status: index % 17 != 0
+      )
+    end
   end
 end
 puts "✅ Created Price Details."
+
+# Make each shop's selected categories reflect the products it actually sells.
+suppliers.each do |supplier|
+  category_ids = supplier.product_details.joins(product: :categories).distinct.pluck('categories.id')
+  Category.where(id: category_ids).find_each do |category|
+    supplier.categorizations.find_or_create_by!(category: category)
+  end
+end
+puts "✅ Assigned selling categories to supplier shops."
 
 # --- 8. Customer Data (Carts, Orders, Reviews) ---
 puts "🛒 Creating Customer Data (Carts, Orders, Reviews)..."
@@ -327,6 +319,7 @@ def build_requisition_with_items!(user:, suppliers:, product_details:, quantity_
       requisition: requisition,
       product_detail: detail,
       supplier: linked_supplier,
+      buyer_supplier: user.suppliers.order(:id).first,
       status: status,
       quantity: quantity,
       quantity_type: quantity_types.sample,
@@ -350,7 +343,7 @@ def build_requisition_with_items!(user:, suppliers:, product_details:, quantity_
   requisition
 end
 
-procurement_user = users.find { |user| %w[Admin Supplier].include?(user.role.name) }
+procurement_user = suppliers.first&.user || users.find { |user| %w[Admin Supplier].include?(user.role.name) }
 if procurement_user
   5.times do
     build_requisition_with_items!(

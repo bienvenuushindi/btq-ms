@@ -80,11 +80,17 @@ class ProductDetailSerializer < Serializer
     object.product.name if object.product
   end
 
+  attribute :expirable do |object|
+    object.product&.expirable?
+  end
+
   attribute :product_name do |object|
     object.product.name if object.product
   end
 
   attribute :expired_status do |object, params|
+    next "not_applicable" unless object.product&.expirable?
+
     effective_expiration = ProductDetailSerializer.expiration_for(object, params&.[](:current_user), params&.[](:supplier_shop_id))
     if effective_expiration.nil?
       "unknown"

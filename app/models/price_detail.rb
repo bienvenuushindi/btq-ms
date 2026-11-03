@@ -20,11 +20,14 @@ class PriceDetail < ApplicationRecord
       raise ActiveRecord::RecordInvalid.new(invalid_price_detail)
     end
 
+    expired_date = SupplierProductDetail.find_by(supplier_id: supplier_id, product_detail_id: product_detail_id)&.expired_date || product_detail.expired_date
+
     SupplierProductDetail.upsert(
       {
         supplier_id: supplier_id,
         product_detail_id: product_detail_id,
         supplier_status: ActiveModel::Type::Boolean.new.cast(supplier_status),
+        expired_date: expired_date,
         created_at: Time.current,
         updated_at: Time.current
       },

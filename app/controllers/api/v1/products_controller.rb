@@ -17,7 +17,7 @@ class Api::V1::ProductsController < ApplicationController
       return
     end
 
-    @products = ProductService::Retriever.call(Product.market_for(current_user), params.except(:status, :scope))
+    @products = ProductService::Retriever.call(market_scope, params.except(:status, :scope))
     render_collection(paginate(@products), serializer, market_serializer_options)
   end
 
@@ -27,7 +27,7 @@ class Api::V1::ProductsController < ApplicationController
       return
     end
 
-    @products = ProductService::Searcher.call(Product.market_for(current_user), params.except(:status, :scope))
+    @products = ProductService::Searcher.call(market_scope, params.except(:status, :scope))
     render_collection(paginate(@products), serializer, ProductService::Helper.search_options.deep_merge(market_serializer_options))
   end
 
@@ -54,6 +54,15 @@ class Api::V1::ProductsController < ApplicationController
   end
 
   private
+
+  def market_scope
+    scope = Product.market_for(current_user)
+    return scope unless ActiveModel::Type::Boolean.new.cast(params[:shop_categories])
+
+    shop = current_user.suppliers.order(:created_at).first
+    category_ids = shop ? shop.categories.select(:id) : Category.none.select(:id)
+    scope.where(id: Product.joins(:categories).where(categories: { id: category_ids }).select(:id))
+  end
 
   def find_product
     @product = product_scope.find(params[:id])

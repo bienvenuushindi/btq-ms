@@ -24,6 +24,7 @@ class Requisition < ApplicationRecord
   before_validation do
     self.total_price = total_price.present? ? total_price.to_d.round(2) : 0
   end
+  validate :exchange_rates_must_be_positive
 
   def self.by_status(status)
     case status.to_s
@@ -46,9 +47,35 @@ class Requisition < ApplicationRecord
   def purchased_total_price
     product_detail_requisitions
       .bought
-      .sum('COALESCE(quantity, 0) * COALESCE(price, 0)')
+      .to_a
+      .sum { |item| item.quantity.to_d * item.price.to_d * exchange_multiplier(item.currency) }
       .to_d
       .round(2)
+  end
+
+  def exchange_rate_for(currency)
+    source_currency = currency.to_s.downcase
+    return 1.to_d if source_currency.blank? || source_currency == 'usd'
+
+    (exchange_rates || {})[source_currency].to_d
+  end
+
+  def exchange_multiplier(currency)
+    source_currency = currency.to_s.downcase
+    target_currency = price_currency.to_s.downcase
+    return 1.to_d if source_currency.blank? || source_currency == target_currency
+
+    exchange_rate_for(target_currency) / exchange_rate_for(source_currency)
+  end
+
+  def exchange_rates_must_be_positive
+    (exchange_rates || {}).each do |currency, rate|
+      value = BigDecimal(rate.to_s) rescue nil
+      unless %w[usd fc ugx rw].include?(currency.to_s.downcase) && value&.positive?
+        errors.add(:exchange_rates, 'must contain positive rates for supported currencies')
+        break
+      end
+    end
   end
 
   def recalculate_purchased_total_price!

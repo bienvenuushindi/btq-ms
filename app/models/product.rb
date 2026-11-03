@@ -15,7 +15,8 @@ class Product < ApplicationRecord
   validates :name, presence: true, uniqueness: true
   validates :short_description, presence: true
   validates :country_origin, presence: true
-  before_validation :sync_active_with_approval_status
+  validates :expirable, inclusion: { in: [true, false] }
+  before_validation :sync_active_with_approval_status, if: :will_save_change_to_approval_status?
 
   scope :inactive, -> { where(active: false) }
   scope :active, -> { where(active: true) }

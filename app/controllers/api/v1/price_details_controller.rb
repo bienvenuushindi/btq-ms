@@ -16,7 +16,9 @@ class Api::V1::PriceDetailsController < ApplicationController
     result = SupplierProductDetail.transaction do
       selection = SupplierProductDetail.find_or_initialize_by(supplier: supplier, product_detail: product_detail)
       selection.supplier_status = ActiveModel::Type::Boolean.new.cast(permitted.fetch(:supplier_status, true))
-      selection.expired_date = permitted[:expired_date].presence || selection.expired_date || product_detail.expired_date
+      selection.expired_date = if product_detail.product.expirable?
+                                 permitted[:expired_date].presence || selection.expired_date || product_detail.expired_date
+                               end
       selection.save!
       PriceDetailService::Creator.call(permitted)
     end

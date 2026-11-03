@@ -1,5 +1,5 @@
 class RequisitionSerializer < Serializer
-  attributes :id, :price_currency, :archived, :date
+  attributes :id, :price_currency, :archived, :date, :exchange_rates
   # attribute :product_items do |object|
   #   object.product_details.with_attached_images.joins(:product).select('product_details.*, products.name')
   # end
@@ -7,10 +7,9 @@ class RequisitionSerializer < Serializer
   attribute :total_price do |object, params|
     RequisitionSerializer.scoped_requisition_items(object, params&.dig(:current_user))
                          .bought
-                         .sum('COALESCE(quantity, 0) * COALESCE(price, 0)')
-                         .to_d
-                         .round(2)
-                         .to_f
+                         .to_a
+                         .sum { |item| item.quantity.to_d * item.price.to_d * object.exchange_multiplier(item.currency) }
+                         .to_d.round(2).to_f
   end
 
   attribute :count_products do |object, params|
@@ -51,6 +50,7 @@ class RequisitionSerializer < Serializer
         image_urls: product_detail.image_urls,
         product_detail_id: product_detail.id,
         product_expired_date: product_detail.expired_date,
+        product_expirable: product_detail.product&.expirable?,
         requisition_item_id: requisition_item.id,
         requisition_id: requisition_item.requisition_id,
         status: requisition_item.status || ProductDetailRequisition::PENDING_STATUS,
@@ -64,6 +64,9 @@ class RequisitionSerializer < Serializer
         currency: requisition_item.currency,
         note: requisition_item.note,
         price: requisition_item.price.to_d.round(2).to_f,
+        converted_price: (requisition_item.price.to_d * object.exchange_multiplier(requisition_item.currency)).round(2).to_f,
+        requisition_currency: object.price_currency,
+        exchange_rate: object.exchange_multiplier(requisition_item.currency),
       }
     end
   end

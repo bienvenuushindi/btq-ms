@@ -26,7 +26,7 @@ class ProductDetail < ApplicationRecord
     case_sensitive: false,
     message: 'has already been used for this product'
   }
-  validates :expired_date, presence: true
+  validates :expired_date, presence: true, if: -> { product&.expirable? }
 
   # default_scope { where(status: true) }
   # Scope to load inactive records
@@ -72,6 +72,7 @@ class ProductDetail < ApplicationRecord
   scope :sc_expired, -> { where('expired_date <= ?', Date.current) }
 
   before_save :calculate_popularity_score
+  before_validation :clear_expiration_for_non_expirable_product
   after_create :increment_category_counts
   after_update :update_category_counts
   after_destroy :update_category_counts_on_destroy
@@ -174,6 +175,10 @@ class ProductDetail < ApplicationRecord
 
 
   private
+
+  def clear_expiration_for_non_expirable_product
+    self.expired_date = nil if product && !product.expirable?
+  end
 
   def default_image_url
     base_url = ENV['APP_URL'].presence

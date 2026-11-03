@@ -29,6 +29,10 @@ Rails.application.routes.draw do
       end
       resources :categories, only: [:index, :create, :show, :update, :destroy] do
         collection do
+          get 'catalog'
+          get 'shop'
+          post 'shop/:category_id', to: 'categories#select_for_shop'
+          delete 'shop/:category_id', to: 'categories#remove_from_shop'
           get 'tree_structure'
           get 'parents'
         end
@@ -84,6 +88,7 @@ Rails.application.routes.draw do
         end
       end
       get '/current_user', to: 'current_user#index'
+      post '/current_user/accept_terms', to: 'current_user#accept_terms'
       get 'quantity_types', to: 'requisition_products#quantity_types'
       get 'currencies', to: 'requisition_products#currencies'
       get 'check_auth', to: 'authentication#check_auth'
