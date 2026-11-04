@@ -5,6 +5,7 @@ require 'bigdecimal'
 
 CATALOG_CATEGORY_DESCRIPTIONS = {
   'Deodorant' => 'Deodorant and fragrance products from the supplier catalog. Follow each package label for exact product type and instructions.',
+  'Parfum' => 'Perfumes listed in the supplier catalog. Check each package label for size, ingredients, and directions.',
   'Glycerine' => 'Glycerine and related personal-care products. Ingredients and intended use vary by item; check the package label.',
   'Concentré' => 'Concentrated skin-care products from the supplier catalog. Product-specific ingredients and directions were not supplied.',
   'Lotion' => 'Skin-care lotions listed in the supplier catalog. Check each package label for ingredients and directions.',
@@ -21,7 +22,8 @@ CATALOG_SOURCE_CATEGORY_MAP = {
   'Body Oil (Mafuta)' => 'Body Oil (Mafuta)'
 }.freeze
 
-CATALOG_ITEMS = CSV.foreach(File.join(__dir__, 'shop_master_product_catalog.csv'), headers: true).map do |row|
+CATALOG_ITEMS = CSV.foreach(File.join(__dir__, 'shop_master_product_catalog.csv'), headers: true).flat_map do |row|
+  source_notes = row.fetch('notes').to_s.strip
   source_category = row.fetch('source_category')
   category = CATALOG_SOURCE_CATEGORY_MAP[source_category]
   if source_category == 'Lotion, Tube, Serum, Spot'
@@ -29,15 +31,29 @@ CATALOG_ITEMS = CSV.foreach(File.join(__dir__, 'shop_master_product_catalog.csv'
   end
   raise "Missing/unknown catalog category at source row #{row['source_row']}" unless CATALOG_CATEGORY_DESCRIPTIONS.key?(category)
 
-  {
+  item = {
     category: category,
     source_category: source_category,
     source_row: row.fetch('source_row').to_i,
     name: row.fetch('product_name').to_s.strip,
     size: row.fetch('size').to_s.strip,
     price: row.fetch('price').to_s.strip,
-    notes: row.fetch('notes').to_s.strip
-  }.freeze
+    notes: source_notes.gsub(/(?:\A|[;|])\s*Parfum\s*:\s*[^;|]+/i, '').gsub(/\A[;|]\s*|[;|]\s*\z/, '').strip
+  }
+
+  # “Parfum: $...” in the source is a second product, not a size/price note
+  # for the deodorant. Preserve it as a separate Market product and category.
+  parfum_price = source_notes[/\bParfum\s*:\s*(.+?)(?:[;|]|\z)/i, 1]&.strip
+  parfum = if parfum_price&.match?(/\$\s*[\d,]+(?:\.\d+)?/)
+    item.merge(
+      category: 'Parfum',
+      name: "#{item[:name]} Parfum",
+      price: parfum_price,
+      notes: "Separate parfum product listed with #{item[:name]}."
+    ).freeze
+  end
+
+  [item.freeze, parfum].compact
 end.freeze
 
 def catalog_price(raw_price)
@@ -61,11 +77,6 @@ def catalog_note_variants(notes)
 
       size = [match[1]&.downcase, "(#{match[2].strip})"].compact.join(' ')
       { size: size, price: price, raw_price: match[3].strip }
-    elsif (match = fragment.match(/\A\s*Parfum\s*:\s*(.+)\z/i))
-      price = catalog_price(match[1])
-      next unless price
-
-      { size: 'Parfum (size not specified)', price: price, raw_price: match[1].strip }
     end
   end
 end

@@ -42,6 +42,34 @@ users.select { |u| u.role.name == 'Supplier' }.each do |user|
 end
 puts "✅ Found or created #{suppliers.count} supplier profiles."
 
+# The workbook belongs to a dedicated Usobajed supplier account. Never rename
+# an unrelated supplier to claim these prices; provision the account when it
+# does not already exist.
+catalog_shop_name = 'Usobajed'
+catalog_supplier = suppliers.find { |supplier| supplier.shop_name.to_s.casecmp(catalog_shop_name).zero? }
+if catalog_supplier.nil?
+  missing_credentials = %w[USOBAJED_EMAIL USOBAJED_PHONE_NUMBER USOBAJED_PASSWORD].select { |key| ENV[key].to_s.strip.empty? }
+  unless missing_credentials.empty?
+    raise "Create the Usobajed supplier by setting #{missing_credentials.join(', ')} in .env, then rerun the seed."
+  end
+
+  catalog_user = User.find_or_initialize_by(email: ENV.fetch('USOBAJED_EMAIL').strip.downcase)
+  if catalog_user.persisted? && catalog_user.role&.name.to_s.casecmp('Supplier') != 0
+    raise "USOBAJED_EMAIL belongs to a non-supplier user; use a dedicated supplier email."
+  end
+  catalog_user.assign_attributes(
+    name: catalog_user.name.presence || catalog_shop_name,
+    phone_number: ENV.fetch('USOBAJED_PHONE_NUMBER').strip,
+    role: supplier_role,
+    active: true
+  )
+  catalog_user.password = ENV.fetch('USOBAJED_PASSWORD') unless catalog_user.persisted?
+  catalog_user.save!
+  catalog_supplier = Supplier.find_or_create_by!(user: catalog_user) { |record| record.shop_name = catalog_shop_name }
+  suppliers << catalog_supplier
+end
+puts "✅ Usobajed supplier is ready to receive catalog prices."
+
 # --- 5. Categories ---
 puts "🏷️ Creating Categories..."
 main_categories = []
@@ -58,17 +86,6 @@ puts "✅ Created #{all_categories.count} Categories."
 puts "📦 Importing the shop master product catalog..."
 admin_user = users.find { |user| user.role.name.casecmp('Admin').zero? }
 raise 'Create an Admin user before importing the public catalog.' unless admin_user
-raise 'Create a Supplier profile for the shop Usobajed before importing its prices.' if suppliers.empty?
-
-catalog_shop_name = ENV.fetch('CATALOG_SUPPLIER_SHOP_NAME', 'Usobajed').strip
-catalog_supplier = suppliers.find { |supplier| supplier.shop_name.to_s.casecmp(catalog_shop_name).zero? }
-if catalog_supplier.nil? && suppliers.one?
-  catalog_supplier = suppliers.first
-  catalog_supplier.update!(shop_name: catalog_shop_name)
-end
-if catalog_supplier.nil?
-  raise "Set CATALOG_SUPPLIER_SHOP_NAME or rename the matching supplier profile to #{catalog_shop_name}."
-end
 
 normalized_name = ->(value) { value.to_s.unicode_normalize(:nfkc).strip.downcase.gsub(/\s+/, ' ') }
 grouped_items = CATALOG_ITEMS.group_by { |item| [item[:category], normalized_name.call(item[:name])] }
