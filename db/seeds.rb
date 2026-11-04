@@ -56,17 +56,18 @@ puts "✅ Created #{all_categories.count} Categories."
 
 # --- 6. Products, ProductDetails & source prices ---
 puts "📦 Importing the shop master product catalog..."
-raise 'At least one admin or supplier user is required to own the catalog.' if users.none? { |user| %w[Admin Supplier].include?(user.role.name) }
-raise 'Create at least one supplier user before importing catalog prices.' if suppliers.empty?
-
 admin_user = users.find { |user| user.role.name.casecmp('Admin').zero? }
-catalog_supplier = if ENV['CATALOG_SUPPLIER_EMAIL'].present?
-                     suppliers.find { |supplier| supplier.user.email.casecmp(ENV['CATALOG_SUPPLIER_EMAIL']).zero? }
-                   elsif suppliers.one?
-                     suppliers.first
-                   end
+raise 'Create an Admin user before importing the public catalog.' unless admin_user
+raise 'Create a Supplier profile for the shop Usobajed before importing its prices.' if suppliers.empty?
+
+catalog_shop_name = ENV.fetch('CATALOG_SUPPLIER_SHOP_NAME', 'Usobajed').strip
+catalog_supplier = suppliers.find { |supplier| supplier.shop_name.to_s.casecmp(catalog_shop_name).zero? }
+if catalog_supplier.nil? && suppliers.one?
+  catalog_supplier = suppliers.first
+  catalog_supplier.update!(shop_name: catalog_shop_name)
+end
 if catalog_supplier.nil?
-  raise 'Set CATALOG_SUPPLIER_EMAIL in .env to the supplier account whose prices are in the workbook.'
+  raise "Set CATALOG_SUPPLIER_SHOP_NAME or rename the matching supplier profile to #{catalog_shop_name}."
 end
 
 normalized_name = ->(value) { value.to_s.unicode_normalize(:nfkc).strip.downcase.gsub(/\s+/, ' ') }
@@ -105,8 +106,8 @@ grouped_items.each do |(category_name, name_key), source_rows|
     approval_status: :approved,
     catalog_scope: :public_catalog,
     country_origin: 'Not specified',
-    user: admin_user || catalog_supplier.user,
-    submitted_by: admin_user || catalog_supplier.user,
+    user: admin_user,
+    submitted_by: admin_user,
     reviewed_by: admin_user,
     reviewed_at: Time.current
   )
@@ -145,6 +146,7 @@ grouped_items.each do |(category_name, name_key), source_rows|
         box_units: 0,
         approval_status: :approved,
         status: true,
+        submitted_by: admin_user,
         views: detail.new_record? ? 0 : detail.views,
         sales_count: detail.new_record? ? 0 : detail.sales_count,
         reviewed_by: admin_user,
