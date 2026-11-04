@@ -120,6 +120,9 @@ grouped_items.each do |(category_name, name_key), source_rows|
     ].uniq.join("\n"),
     approval_status: :approved,
     catalog_scope: :public_catalog,
+    # The source catalog contains no product expiration dates, so do not
+    # require seed-generated dates for these imported personal-care items.
+    expirable: false,
     country_origin: 'Not specified',
     user: admin_user,
     submitted_by: admin_user,
