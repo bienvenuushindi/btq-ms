@@ -3,8 +3,7 @@
 #
 
 # --- Configuration ---
-NUM_PRODUCTS = 500
-require_relative 'seeds/catalog_data'
+require_relative 'seeds/shop_master_product_catalog'
 puts "🧹 Cleaning up existing data..."
 ActiveRecord::Base.connection.disable_referential_integrity do
   [
@@ -83,14 +82,10 @@ puts "✅ Created #{suppliers.count} Suppliers and multiple Addresses."
 # --- 5. Categories ---
 puts "🏷️ Creating Categories..."
 main_categories = []
-[
-  'Rice, grains & flour', 'Cooking essentials', 'Canned & preserved foods', 'Beverages',
-  'Dairy, eggs & chilled', 'Snacks & confectionery', 'Personal care', 'Household cleaning',
-  'Baby care', 'Fresh produce'
-].each do |name|
+CATALOG_CATEGORY_DESCRIPTIONS.each do |name, description|
   main_categories << Category.create!(
     name: name,
-    description: "Everyday #{name.downcase} stocked by neighborhood shops in Kinshasa.",
+    description: description,
     active: true
   )
 end
@@ -98,90 +93,110 @@ end
 all_categories = main_categories
 puts "✅ Created #{all_categories.count} Categories."
 
-# --- 6. Products & ProductDetails ---
-puts "📦 Creating Products and Product Details..."
+# --- 6. Products, ProductDetails & source prices ---
+puts "📦 Importing the shop master product catalog..."
+raise 'At least one admin or supplier user is required to own the catalog.' if users.none? { |user| %w[Admin Supplier].include?(user.role.name) }
+raise 'Create at least one supplier user before importing catalog prices.' if suppliers.empty?
+
+admin_user = users.find { |user| user.role.name.casecmp('Admin').zero? }
+catalog_supplier = if ENV['CATALOG_SUPPLIER_EMAIL'].present?
+                     suppliers.find { |supplier| supplier.user.email.casecmp(ENV['CATALOG_SUPPLIER_EMAIL']).zero? }
+                   elsif suppliers.one?
+                     suppliers.first
+                   end
+if catalog_supplier.nil?
+  raise 'Set CATALOG_SUPPLIER_EMAIL in .env to the supplier account whose prices are in the workbook.'
+end
+
+normalized_name = ->(value) { value.to_s.unicode_normalize(:nfkc).strip.downcase.gsub(/\s+/, ' ') }
+grouped_items = CATALOG_ITEMS.group_by { |item| [item[:category], normalized_name.call(item[:name])] }
+name_group_counts = grouped_items.keys.group_by(&:last).transform_values(&:length)
 products = []
 product_details = []
+catalog_price_count = 0
+catalog_unpriced_count = 0
 
-creator_users = users.reject { |user| user.role.name.casecmp('Customer').zero? }
-raise 'At least one admin or supplier user is required to own the catalog.' if creator_users.empty?
-
-catalog_rows = CATALOG_PRODUCTS.flat_map do |category_name, names|
-  sizes = PACK_SIZES.fetch(category_name)
-  names.each_with_index.map do |base_name, base_index|
-      {category: category_name, category_index: CATALOG_PRODUCTS.keys.index(category_name), name: "#{base_name} #{sizes[base_index % sizes.length]}", base_index: base_index, pack_index: base_index % sizes.length}
-  end
-end
-raise "Catalog must contain exactly #{NUM_PRODUCTS} named products (got #{catalog_rows.length})." unless catalog_rows.length == NUM_PRODUCTS
-
-catalog_rows.each_with_index do |row, index|
-  category = main_categories.find { |item| item.name == row[:category] }
-  creator_user = creator_users[index % creator_users.length]
+grouped_items.each do |(category_name, name_key), source_rows|
+  original_name = source_rows.first[:name]
+  product_name = name_group_counts[name_key] > 1 ? "#{original_name} (#{category_name})" : original_name
   product = Product.create!(
-    name: row[:name],
-    short_description: "#{row[:category]} · #{row[:name].split.last(2).join(' ')} retail pack",
-    description: "Retail and wholesale stock item for neighborhood shops. Pack: #{row[:name].split.last(2).join(' ')}. Store according to the manufacturer’s instructions and check the lot date on receipt.",
+    name: product_name,
+    short_description: "#{category_name} product listed in the shop master catalog.",
+    description: [
+      CATALOG_CATEGORY_DESCRIPTIONS.fetch(category_name),
+      "Catalog name: #{original_name}.",
+      "Country of manufacture was not provided in the source catalog; verify it on the package.",
+      *source_rows.filter_map { |row| "Source row #{row[:source_row]} price as listed: #{row[:price]}" if row[:price].include?('/') },
+      *source_rows.filter_map { |row| "Supplier note: #{row[:notes]}" if row[:notes].present? && !row[:notes].match?(/\ACategory:/i) }
+    ].uniq.join("\n"),
     approval_status: :approved,
     catalog_scope: :public_catalog,
-    country_origin: %w[CD CG RW UG ZM][index % 5],
-    user: creator_user,
-    submitted_by: creator_user,
-    reviewed_by: users.find { |user| user.role.name.casecmp('Admin').zero? },
+    country_origin: 'Not specified',
+    user: admin_user || catalog_supplier.user,
+    submitted_by: admin_user || catalog_supplier.user,
+    reviewed_by: admin_user,
     reviewed_at: Time.current
   )
   products << product
-  Categorization.create!(categorizable: product, category: category)
+  Categorization.create!(categorizable: product, category: main_categories.find { |category| category.name == category_name })
 
-  # Keep a visible mix of already-expired, near-expiry, and healthy lots for QA.
-  expiry_date = case index % 20
-                when 0 then Date.current - rand(1..45)
-                when 1 then Date.current + rand(1..45)
-                else Date.current + rand(120..540)
-                end
-  detail = ProductDetail.create!(
-    product: product,
-    size: 'Retail pack',
-    expired_date: expiry_date,
-    dozen_units: 12,
-    box_units: [6, 12, 24].sample,
-    approval_status: :approved,
-    status: true,
-    views: 10 + (index * 17 % 990),
-    sales_count: index * 13 % 200
-  )
-  product_details << detail
-end
-puts "✅ Created #{products.count} Products and #{product_details.count} Product Details."
+  variants = source_rows.flat_map do |row|
+    primary_size = row[:size].blank? || row[:size] == '—' ? 'Size not specified' : row[:size]
+    primary_price = catalog_price(row[:price])
+    values = [{ size: primary_size, price: primary_price, source_row: row[:source_row] }]
+    values.concat(catalog_note_variants(row[:notes]).map { |variant| variant.merge(source_row: row[:source_row]) })
+    values
+  end
 
-# --- 7. PriceDetails ---
-puts "💰 Creating Price Details (Supplier Pricing)..."
-raise 'Create at least one supplier user before seeding product prices.' if suppliers.empty?
-product_details.each_with_index do |detail, index|
-  category_index = catalog_rows[index][:category_index]
-  unit_price = (1.25 + (category_index * 0.85) + ((index * 19) % 240) / 10.0).round(2)
-  selected_suppliers = [suppliers[index % suppliers.length]]
-  selected_suppliers << suppliers[(index * 7 + 3) % suppliers.length] if suppliers.length > 1 && index % 3 != 0
-  selected_suppliers.uniq.each_with_index do |supplier, supplier_index|
-    currency = supplier.country&.code == 'CD' ? 'fc' : 'usd'
-    SupplierProductDetail.create!(
-      supplier: supplier,
-      product_detail: detail,
-      supplier_status: index % 17 != 0,
-      expired_date: detail.expired_date
-    )
-    {unit: unit_price * (supplier_index.zero? ? 1 : 1.08), dozen: unit_price * 11, box: unit_price * detail.box_units}.each do |quantity_type, price|
-      PriceDetail.create!(
-        supplier: supplier,
-        product_detail: detail,
-        price: price.round(2),
-        quantity_type: quantity_type,
-        currency: currency,
-        supplier_status: index % 17 != 0
+  variants_by_size = variants.group_by { |variant| normalized_name.call(variant[:size]) }
+  variants_by_size.each_value do |same_size_variants|
+    seen_price_keys = []
+    same_size_variants.each do |variant|
+      size = variant[:size]
+      price = variant[:price]
+      price_key = price && [price[:amount].to_s('F'), price[:currency]]
+      next if seen_price_keys.include?(price_key)
+
+      if seen_price_keys.any?
+        # PostgreSQL permits one detail per normalized size. Keep conflicting
+        # source listings separately identifiable instead of dropping a price.
+        size = "#{size} (catalog row #{variant[:source_row]})"
+      end
+      seen_price_keys << price_key
+
+      detail = ProductDetail.create!(
+        product: product,
+        size: size,
+        expired_date: nil,
+        dozen_units: 0,
+        box_units: 0,
+        approval_status: :approved,
+        status: true,
+        views: 0,
+        sales_count: 0,
+        reviewed_by: admin_user,
+        reviewed_at: Time.current
       )
+      product_details << detail
+      SupplierProductDetail.create!(supplier: catalog_supplier, product_detail: detail, supplier_status: true, expired_date: nil)
+
+      if price
+        PriceDetail.create!(
+          supplier: catalog_supplier,
+          product_detail: detail,
+          price: price[:amount],
+          quantity_type: :unit,
+          currency: price[:currency],
+          supplier_status: true
+        )
+        catalog_price_count += 1
+      else
+        catalog_unpriced_count += 1
+      end
     end
   end
 end
-puts "✅ Created Price Details."
+puts "✅ Imported #{products.count} products, #{product_details.count} pack variants, #{catalog_price_count} prices, and #{catalog_unpriced_count} unpriced variants."
 
 # Make each shop's selected categories reflect the products it actually sells.
 suppliers.each do |supplier|
