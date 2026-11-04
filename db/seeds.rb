@@ -4,22 +4,7 @@
 
 # --- Configuration ---
 require_relative 'seeds/shop_master_product_catalog'
-puts "🧹 Cleaning up existing data..."
-ActiveRecord::Base.connection.disable_referential_integrity do
-  [
-    Customer::Shipping, Customer::Payment, Customer::OrderDetail, Customer::CombinedOrder,
-    Customer::IndividualOrder, Customer::CartItem, Customer::Cart, Customer::Review,
-    Customer::Rating, Customer::PricePreference, Customer::Preference, Address, Category,
-    Categorization, Country, PriceDetail, ProductDetailRequisition, ProductDetail, Product,
-    Requisition, Supplier, Tag
-  ].each do |model|
-    model.delete_all
-  rescue ActiveRecord::StatementInvalid => e
-    # Catch errors for tables without data or that don't exist in the current scope
-    puts "Could not delete from #{model.name}: #{e.message}"
-  end
-end
-puts "✅ Cleanup complete."
+puts "📥 Importing shop catalog without clearing existing records..."
 puts "--------------------------------------------------"
 
 # --- 1. Roles ---
@@ -39,7 +24,6 @@ COUNTRIES = [
   { name: 'Zambia', code: 'ZM' }
 ]
 COUNTRIES.each { |attributes| Country.find_or_create_by!(code: attributes[:code]) { |country| country.name = attributes[:name] } }
-us_country = Country.find_by!(code: 'CD')
 puts "✅ Countries created."
 
 # --- 3. Users ---
@@ -47,47 +31,24 @@ puts "🧑‍💻 Keeping existing Users..."
 users = User.includes(:role).to_a
 puts "✅ Created #{users.count} Users."
 
-# --- 4. Suppliers & Addresses ---
-puts "🏢 Creating Suppliers and Addresses..."
+# --- 4. Supplier profiles ---
+puts "🏢 Creating supplier profiles..."
 suppliers = []
-shop_names = ['Marché Central Wholesale', 'Ngaliema Cash & Carry', 'Mama Nshiku General Store', 'Kintambo Foods & Home', 'Matonge Trading House', 'Gombe Family Market', 'Bandalungwa Wholesale Depot', 'Limete Fresh & Grocery', 'Barumbu Essentials Shop', 'Masina Community Market']
 users.select { |u| u.role.name == 'Supplier' }.each do |user|
-  supplier = Supplier.create!(
-    user: user,
-    shop_name: shop_names[suppliers.length % shop_names.length]
-  )
+  supplier = Supplier.find_or_create_by!(user: user) do |record|
+    record.shop_name = user.name.presence || "Supplier #{user.id}"
+  end
   suppliers << supplier
-  # Supplier Address
-  Address.create!(
-    addressable: supplier,
-    country: us_country,
-    line1: ["Avenue du Commerce #{100 + supplier.id}", "Boulevard du 30 Juin #{100 + supplier.id}"].sample,
-    city: 'Kinshasa',
-    phone_number1: "+243 81 #{format('%03d', supplier.id % 1000)} #{format('%04d', (supplier.id * 37) % 10_000)}"
-  )
 end
-
-# Customer Addresses
-users.select { |u| u.role.name == 'Customer' }.sample([users.count { |user| user.role.name == 'Customer' } / 5, 1].max).each do |user|
-  Address.create!(
-    addressable: user,
-    country: us_country,
-    line1: "Avenue des Écoles #{100 + user.id}",
-    city: 'Kinshasa',
-    phone_number1: "+243 82 #{format('%03d', user.id % 1000)} #{format('%04d', (user.id * 53) % 10_000)}"
-  )
-end
-puts "✅ Created #{suppliers.count} Suppliers and multiple Addresses."
+puts "✅ Found or created #{suppliers.count} supplier profiles."
 
 # --- 5. Categories ---
 puts "🏷️ Creating Categories..."
 main_categories = []
 CATALOG_CATEGORY_DESCRIPTIONS.each do |name, description|
-  main_categories << Category.create!(
-    name: name,
-    description: description,
-    active: true
-  )
+  category = Category.find_or_initialize_by(name: name)
+  category.update!(description: description, active: true)
+  main_categories << category
 end
 
 all_categories = main_categories
@@ -119,15 +80,27 @@ catalog_unpriced_count = 0
 grouped_items.each do |(category_name, name_key), source_rows|
   original_name = source_rows.first[:name]
   product_name = name_group_counts[name_key] > 1 ? "#{original_name} (#{category_name})" : original_name
-  product = Product.create!(
+  base_product_name = product_name
+  collision = 0
+  loop do
+    product = Product.find_by(name: product_name)
+    break if product.nil? || product.description.to_s.include?('Imported from Shop_Master_Product_Catalog.xlsx')
+
+    collision += 1
+    suffix = collision == 1 ? 'Shop Catalog' : "Shop Catalog #{collision}"
+    product_name = "#{base_product_name} (#{suffix})"
+  end
+  product ||= Product.new(name: product_name)
+  product.assign_attributes(
     name: product_name,
     short_description: "#{category_name} product listed in the shop master catalog.",
     description: [
+      'Imported from Shop_Master_Product_Catalog.xlsx.',
       CATALOG_CATEGORY_DESCRIPTIONS.fetch(category_name),
       "Catalog name: #{original_name}.",
       "Country of manufacture was not provided in the source catalog; verify it on the package.",
       *source_rows.filter_map { |row| "Source row #{row[:source_row]} price as listed: #{row[:price]}" if row[:price].include?('/') },
-      *source_rows.filter_map { |row| "Supplier note: #{row[:notes]}" if row[:notes].present? && !row[:notes].match?(/\ACategory:/i) }
+      *source_rows.filter_map { |row| "Supplier note: #{row[:notes]}" if row[:notes].present? }
     ].uniq.join("\n"),
     approval_status: :approved,
     catalog_scope: :public_catalog,
@@ -137,8 +110,9 @@ grouped_items.each do |(category_name, name_key), source_rows|
     reviewed_by: admin_user,
     reviewed_at: Time.current
   )
+  product.save!
   products << product
-  Categorization.create!(categorizable: product, category: main_categories.find { |category| category.name == category_name })
+  Categorization.find_or_create_by!(categorizable: product, category: main_categories.find { |category| category.name == category_name })
 
   variants = source_rows.flat_map do |row|
     primary_size = row[:size].blank? || row[:size] == '—' ? 'Size not specified' : row[:size]
@@ -164,31 +138,26 @@ grouped_items.each do |(category_name, name_key), source_rows|
       end
       seen_price_keys << price_key
 
-      detail = ProductDetail.create!(
-        product: product,
+      detail = product.product_details.where('LOWER(BTRIM(size)) = ?', normalized_name.call(size)).first_or_initialize
+      detail.assign_attributes(
         size: size,
-        expired_date: nil,
         dozen_units: 0,
         box_units: 0,
         approval_status: :approved,
         status: true,
-        views: 0,
-        sales_count: 0,
+        views: detail.new_record? ? 0 : detail.views,
+        sales_count: detail.new_record? ? 0 : detail.sales_count,
         reviewed_by: admin_user,
         reviewed_at: Time.current
       )
+      detail.save!
       product_details << detail
-      SupplierProductDetail.create!(supplier: catalog_supplier, product_detail: detail, supplier_status: true, expired_date: nil)
+      supplier_product_detail = SupplierProductDetail.find_or_initialize_by(supplier: catalog_supplier, product_detail: detail)
+      supplier_product_detail.update!(supplier_status: true)
 
       if price
-        PriceDetail.create!(
-          supplier: catalog_supplier,
-          product_detail: detail,
-          price: price[:amount],
-          quantity_type: :unit,
-          currency: price[:currency],
-          supplier_status: true
-        )
+        price_detail = PriceDetail.find_or_initialize_by(supplier: catalog_supplier, product_detail: detail, quantity_type: :unit)
+        price_detail.update!(price: price[:amount], currency: price[:currency], supplier_status: true)
         catalog_price_count += 1
       else
         catalog_unpriced_count += 1
@@ -207,12 +176,28 @@ suppliers.each do |supplier|
 end
 puts "✅ Assigned selling categories to supplier shops."
 
-# --- 8. Customer Data (Carts, Orders, Reviews) ---
-puts "🛒 Creating Customer Data (Carts, Orders, Reviews)..."
+# The previous demo catalog created empty food categories. Deactivate only
+# those legacy categories when nothing in the live database still uses them.
+[
+  'Rice, grains & flour', 'Cooking essentials', 'Canned & preserved foods', 'Beverages',
+  'Dairy, eggs & chilled', 'Snacks & confectionery', 'Personal care', 'Household cleaning',
+  'Baby care', 'Fresh produce'
+].each do |legacy_name|
+  legacy_category = Category.find_by(name: legacy_name)
+  next unless legacy_category
+  next if legacy_category.products.exists? || legacy_category.suppliers.exists? || legacy_category.customer_preferences.exists?
+
+  legacy_category.update!(active: false)
+end
+
+quantity_types = %w[unit dozen box]
+
+# --- 8. Optional demo data (Carts, Orders, Reviews, Requisitions) ---
+if ENV['RUN_DEMO_SEEDS'] == 'true'
+puts "🛒 Creating demo Customer Data (Carts, Orders, Reviews)..."
 customer_users = users.select { |u| u.role.name == 'Customer' }
 order_statuses = %w[pending processing shipped delivered cancelled]
 payment_methods = %w[credit_card paypal bank_transfer]
-quantity_types = %w[unit dozen box]
 
 customer_users.each do |user|
   # Customer Preferences
@@ -307,6 +292,7 @@ customer_users.each do |user|
   end
 end
 puts "✅ Customer data created."
+end
 
 def build_requisition_with_items!(user:, suppliers:, product_details:, quantity_types:, date:, archived:)
   requisition = Requisition.create!(
@@ -358,30 +344,34 @@ def build_requisition_with_items!(user:, suppliers:, product_details:, quantity_
   requisition
 end
 
-procurement_user = suppliers.first&.user || users.find { |user| %w[Admin Supplier].include?(user.role.name) }
-if procurement_user
-  5.times do
+if ENV['RUN_DEMO_SEEDS'] == 'true'
+  procurement_user = suppliers.first&.user || users.find { |user| %w[Admin Supplier].include?(user.role.name) }
+  if procurement_user
+    5.times do
+      build_requisition_with_items!(
+        user: procurement_user,
+        suppliers: suppliers,
+        product_details: product_details,
+        quantity_types: quantity_types,
+        date: Faker::Date.backward(days: 30),
+        archived: [true, false].sample
+      )
+    end
+
     build_requisition_with_items!(
       user: procurement_user,
       suppliers: suppliers,
       product_details: product_details,
       quantity_types: quantity_types,
-      date: Faker::Date.backward(days: 30),
-      archived: [true, false].sample
+      date: Date.current,
+      archived: nil
     )
+    puts "✅ Demo requisitions created."
+  else
+    puts "⚠️ Skipping demo requisitions: No Admin or Supplier user found."
   end
-
-  build_requisition_with_items!(
-    user: procurement_user,
-    suppliers: suppliers,
-    product_details: product_details,
-    quantity_types: quantity_types,
-    date: Date.current,
-    archived: nil
-  )
-  puts "✅ Requisitions created."
 else
-  puts "⚠️ Skipping Requisitions: No Admin or Supplier user found to assign them to."
+  puts "Skipping demo customer records and requisitions (set RUN_DEMO_SEEDS=true to opt in)."
 end
 
 # --- Final Tally ---
