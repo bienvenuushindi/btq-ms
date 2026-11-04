@@ -97,10 +97,17 @@ grouped_items.each do |(category_name, name_key), source_rows|
   original_name = source_rows.first[:name]
   product_name = name_group_counts[name_key] > 1 ? "#{original_name} (#{category_name})" : original_name
   base_product_name = product_name
+  catalog_name_marker = "Catalog name: #{original_name}."
   collision = 0
   loop do
-    product = Product.find_by(name: product_name)
-    break if product.nil? || product.description.to_s.include?('Imported from Shop_Master_Product_Catalog.xlsx')
+    matching_products = Product.where('LOWER(BTRIM(name)) = ?', normalized_name.call(product_name)).order(:id)
+    product = matching_products.find do |candidate|
+      candidate.description.to_s.include?('Imported from Shop_Master_Product_Catalog.xlsx') &&
+        candidate.description.to_s.include?(catalog_name_marker) &&
+        candidate.short_description.to_s == "#{category_name} product listed in the shop master catalog."
+    end
+    break if product
+    break if matching_products.empty?
 
     collision += 1
     suffix = collision == 1 ? 'Shop Catalog' : "Shop Catalog #{collision}"
@@ -113,7 +120,7 @@ grouped_items.each do |(category_name, name_key), source_rows|
     description: [
       'Imported from Shop_Master_Product_Catalog.xlsx.',
       CATALOG_CATEGORY_DESCRIPTIONS.fetch(category_name),
-      "Catalog name: #{original_name}.",
+      catalog_name_marker,
       "Country of manufacture was not provided in the source catalog; verify it on the package.",
       *source_rows.filter_map { |row| "Source row #{row[:source_row]} price as listed: #{row[:price]}" if row[:price].include?('/') },
       *source_rows.filter_map { |row| "Supplier note: #{row[:notes]}" if row[:notes].present? }
@@ -129,7 +136,12 @@ grouped_items.each do |(category_name, name_key), source_rows|
     reviewed_by: admin_user,
     reviewed_at: Time.current
   )
-  product.save!
+  begin
+    product.save!
+  rescue ActiveRecord::RecordInvalid => error
+    source_rows_label = source_rows.map { |row| row[:source_row] }.uniq.join(', ')
+    raise "Catalog product #{product_name.inspect} (#{category_name}; source rows #{source_rows_label}) failed validation: #{error.record.errors.full_messages.join(', ')}"
+  end
   products << product
   Categorization.find_or_create_by!(categorizable: product, category: main_categories.find { |category| category.name == category_name })
 
