@@ -12,4 +12,9 @@ fi
 
 bundle install
 bundle exec rake db:migrate
-bundle exec rake db:seed
+
+# Seeds include demo catalog data and clean existing catalog records. Run them
+# only when explicitly requested for a fresh installation.
+if [[ "${RUN_SEEDS:-false}" == "true" ]]; then
+  bundle exec rake db:seed
+fi
