@@ -48,22 +48,20 @@ puts "✅ Found or created #{suppliers.count} supplier profiles."
 catalog_shop_name = 'Usobajed'
 catalog_supplier = suppliers.find { |supplier| supplier.shop_name.to_s.casecmp(catalog_shop_name).zero? }
 if catalog_supplier.nil?
-  missing_credentials = %w[USOBAJED_EMAIL USOBAJED_PHONE_NUMBER USOBAJED_PASSWORD].select { |key| ENV[key].to_s.strip.empty? }
-  unless missing_credentials.empty?
-    raise "Create the Usobajed supplier by setting #{missing_credentials.join(', ')} in .env, then rerun the seed."
-  end
-
-  catalog_user = User.find_or_initialize_by(email: ENV.fetch('USOBAJED_EMAIL').strip.downcase)
+  catalog_email = ENV.fetch('USOBAJED_EMAIL', 'usobajed@example.com').strip.downcase
+  catalog_phone_number = ENV.fetch('USOBAJED_PHONE_NUMBER', '243995007529').strip
+  catalog_password = ENV.fetch('USOBAJED_PASSWORD', '123456')
+  catalog_user = User.find_or_initialize_by(email: catalog_email)
   if catalog_user.persisted? && catalog_user.role&.name.to_s.casecmp('Supplier') != 0
     raise "USOBAJED_EMAIL belongs to a non-supplier user; use a dedicated supplier email."
   end
   catalog_user.assign_attributes(
     name: catalog_user.name.presence || catalog_shop_name,
-    phone_number: ENV.fetch('USOBAJED_PHONE_NUMBER').strip,
+    phone_number: catalog_phone_number,
     role: supplier_role,
     active: true
   )
-  catalog_user.password = ENV.fetch('USOBAJED_PASSWORD') unless catalog_user.persisted?
+  catalog_user.password = catalog_password unless catalog_user.persisted?
   catalog_user.save!
   catalog_supplier = Supplier.find_or_create_by!(user: catalog_user) { |record| record.shop_name = catalog_shop_name }
   suppliers << catalog_supplier
