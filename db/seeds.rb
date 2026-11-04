@@ -137,10 +137,25 @@ grouped_items.each do |(category_name, name_key), source_rows|
     reviewed_at: Time.current
   )
   begin
-    product.save!
-  rescue ActiveRecord::RecordInvalid => error
-    source_rows_label = source_rows.map { |row| row[:source_row] }.uniq.join(', ')
-    raise "Catalog product #{product_name.inspect} (#{category_name}; source rows #{source_rows_label}) failed validation: #{error.record.errors.full_messages.join(', ')}"
+    loop do
+      begin
+        product.save!
+        break
+      rescue ActiveRecord::RecordInvalid => error
+        # Some existing records can pass the preflight lookup but still be
+        # treated as duplicate by the model validator. Give this catalog row
+        # a stable unique name and retry rather than aborting the whole import.
+        unless error.record.equal?(product) && error.record.errors.of_kind?(:name, :taken)
+          source_rows_label = source_rows.map { |row| row[:source_row] }.uniq.join(', ')
+          raise "Catalog product #{product_name.inspect} (#{category_name}; source rows #{source_rows_label}) failed validation on #{error.record.class}: #{error.record.errors.full_messages.join(', ')}"
+        end
+
+        collision += 1
+        suffix = collision == 1 ? 'Shop Catalog' : "Shop Catalog #{collision}"
+        product_name = "#{base_product_name} (#{suffix})"
+        product.name = product_name
+      end
+    end
   end
   products << product
   Categorization.find_or_create_by!(categorizable: product, category: main_categories.find { |category| category.name == category_name })
